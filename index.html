@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.36.1 (Online Cloud Server)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.37 (Drone Evolution Lvl 1-6 & Cover Designs)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -135,10 +135,64 @@ const { useState, useEffect, useRef, useMemo } = React;
     };
 
     const DRONE_SPRITES_3D = {
-      flax: './assets/drones/flax.png',
-      iris: './assets/drones/iris.png',
-      apis: './assets/drones/helios.png',
-      zeus: './assets/drones/aether.png',
+      flax: './assets/drones/vesper_lvl1.png',
+      iris: './assets/drones/orion_lvl1.png',
+      apis: './assets/drones/helios_lvl1.png',
+      zeus: './assets/drones/aether_lvl1.png',
+      vesper_lvl1: './assets/drones/vesper_lvl1.png',
+      vesper_lvl2: './assets/drones/vesper_lvl2.png',
+      vesper_lvl3: './assets/drones/vesper_lvl3.png',
+      vesper_lvl4: './assets/drones/vesper_lvl4.png',
+      vesper_lvl5: './assets/drones/vesper_lvl5.png',
+      vesper_lvl6: './assets/drones/vesper_lvl6.png',
+      orion_lvl1: './assets/drones/orion_lvl1.png',
+      orion_lvl2: './assets/drones/orion_lvl2.png',
+      orion_lvl3: './assets/drones/orion_lvl3.png',
+      orion_lvl4: './assets/drones/orion_lvl4.png',
+      orion_lvl5: './assets/drones/orion_lvl5.png',
+      orion_lvl6: './assets/drones/orion_lvl6.png',
+      helios_lvl1: './assets/drones/helios_lvl1.png',
+      helios_lvl2: './assets/drones/helios_lvl2.png',
+      helios_lvl3: './assets/drones/helios_lvl3.png',
+      helios_lvl4: './assets/drones/helios_lvl4.png',
+      helios_lvl5: './assets/drones/helios_lvl5.png',
+      helios_lvl6: './assets/drones/helios_lvl6.png',
+      aether_lvl1: './assets/drones/aether_lvl1.png',
+      aether_lvl2: './assets/drones/aether_lvl2.png',
+      aether_lvl3: './assets/drones/aether_lvl3.png',
+      aether_lvl4: './assets/drones/aether_lvl4.png',
+      aether_lvl5: './assets/drones/aether_lvl5.png',
+      aether_lvl6: './assets/drones/aether_lvl6.png',
+      cov_havoc: './assets/drones/cov_havoc.png',
+      cov_hercules: './assets/drones/cov_hercules.png',
+      cov_spartan: './assets/drones/cov_spartan.png',
+    };
+
+    const DRONE_LEVEL_THRESHOLDS = [0, 15000, 55000, 160000, 420000, 1000000];
+    const getDroneLevelInfo = (droneXp = 0) => {
+      const safeXp = Math.max(0, Math.floor(Number(droneXp) || 0));
+      let lvl = 1;
+      for (let i = 1; i < DRONE_LEVEL_THRESHOLDS.length; i++) {
+        if (safeXp >= DRONE_LEVEL_THRESHOLDS[i]) lvl = i + 1;
+      }
+      const curFloor = DRONE_LEVEL_THRESHOLDS[lvl - 1] || 0;
+      const nextReq = lvl < 6 ? DRONE_LEVEL_THRESHOLDS[lvl] : DRONE_LEVEL_THRESHOLDS[5];
+      const progressPct = lvl >= 6
+        ? 100
+        : Math.min(100, Math.max(0, Math.round(((safeXp - curFloor) / Math.max(1, nextReq - curFloor)) * 100)));
+      const dmgBonusPct = (lvl - 1) * 2;   // +0% at Lvl 1 .. +10% at Lvl 6
+      const shdBonusPct = (lvl - 1) * 3;   // +0% at Lvl 1 .. +15% at Lvl 6
+      return { lvl, xp: safeXp, curFloor, nextReq, progressPct, dmgBonusPct, shdBonusPct };
+    };
+
+    const getDroneSpriteKey = (droneType, droneLvl = 1, coverId = null) => {
+      if (coverId && DRONE_SPRITES_3D[coverId]) return coverId;
+      const safeLvl = Math.max(1, Math.min(6, Math.floor(Number(droneLvl) || 1)));
+      const prefix =
+        droneType === 'zeus' ? 'aether' :
+        droneType === 'apis' ? 'helios' :
+        droneType === 'iris' ? 'orion' : 'vesper';
+      return `${prefix}_lvl${safeLvl}`;
     };
 
     const PET_SPRITES_3D = {
@@ -1456,6 +1510,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     const createEmptyDronesSlots = () =>
       Array.from({ length: 10 }, () => ({
         type: null,
+        xp: 0,
         configs: {
           1: createEmptyDronesLoadout(),
           2: createEmptyDronesLoadout(),
@@ -1866,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.36',
+      version: '1.37',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -1990,6 +2045,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         const c2 = d?.configs?.[2] || {};
         return {
           type: ['flax', 'iris', 'apis', 'zeus'].includes(d?.type) ? d.type : null,
+          xp: Number.isFinite(d?.xp) ? Math.max(0, Math.floor(d.xp)) : 0,
           configs: {
             1: {
               lasers: Array.isArray(c1.lasers) ? [c1.lasers[0] || null, c1.lasers[1] || null] : [null, null],
@@ -2018,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.36',
+        version: '1.37',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -2845,10 +2901,11 @@ const { useState, useEffect, useRef, useMemo } = React;
       );
     }
 
-    function DronesSVG({ color = '#ffffff', size = 15, droneType = null, coverId = null }) {
+    function DronesSVG({ color = '#ffffff', size = 15, droneType = null, droneLvl = 1, coverId = null }) {
       const [imgFailed, setImgFailed] = useState(false);
-      const spriteSrc = droneType ? (DRONE_SPRITES_3D[droneType] || DRONE_SPRITES_3D.flax) : null;
-      useEffect(() => { setImgFailed(false); }, [droneType]);
+      const spriteKey = (droneType || coverId) ? getDroneSpriteKey(droneType || 'iris', droneLvl, coverId) : null;
+      const spriteSrc = spriteKey ? (DRONE_SPRITES_3D[spriteKey] || DRONE_SPRITES_3D.vesper_lvl1) : null;
+      useEffect(() => { setImgFailed(false); }, [spriteKey]);
 
       if (!spriteSrc || imgFailed) {
         return (
@@ -3387,6 +3444,15 @@ const { useState, useEffect, useRef, useMemo } = React;
     }
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
+      {
+        title: 'v1.37 • Drone Evolution System (Lvl 1–6), Redesigned Orion/Helios/Aether & Cover Designs',
+        items: [
+          'Introduced complete 6-Level progressive evolution (Lvl 1 Rookie -> Lvl 6 Apex) for Vesper, Orion, Helios, and Aether drones with 24 custom 3D progressive sprites and per-drone XP bars in Equip -> Drones.',
+          'Redesigned Orion (metallic grey with twin glowing red optical sensors), Helios (dark navy-blue armor), and Aether (deep crimson-red armor) with evolving wings, thrusters, and weapon pods at each level.',
+          'Each drone level grants +2% Laser DMG and +3% Shield capacity (up to +10% DMG / +15% Shield at Lvl 6 Apex) stacked on top of drone class and Tech Forge multipliers.',
+          'Repurposed the classic 3D drone sprites onto Drone Covers (Fury Core, Bastion Core, Valkyrie Core) so equipping a cover visually transforms the drone in space, plus added Full 10/10 Set Bonuses.'
+        ]
+      },
       {
         title: 'v1.36 • Supabase Cloud Server, Online Login/Register & Global Admin Control Center',
         items: [
@@ -4448,10 +4514,19 @@ const { useState, useEffect, useRef, useMemo } = React;
 
         let droneDmgTotal = 0;
         let droneShieldTotal = 0;
+        let havocEquippedCount = 0;
+        let herculesEquippedCount = 0;
+        let spartanEquippedCount = 0;
         (state.droneSlots || []).forEach(d => {
           if (!d?.type) return;
           const dCfg = d.configs?.[state.activeConfig] || createEmptyDronesLoadout();
           const cov = dCfg?.cover ? ITEMS.find(i => i.id === dCfg.cover) : null;
+          if (dCfg?.cover === 'cov_havoc') havocEquippedCount += 1;
+          if (dCfg?.cover === 'cov_hercules') herculesEquippedCount += 1;
+          if (dCfg?.cover === 'cov_spartan') spartanEquippedCount += 1;
+          const dLvlInfo = getDroneLevelInfo(d.xp || 0);
+          const lvlDmgMult = 1 + (dLvlInfo.dmgBonusPct / 100);
+          const lvlShdMult = 1 + (dLvlInfo.shdBonusPct / 100);
           const covDmgMult = 1 + (cov?.dmgPct || 0) / 100;
           const covShdMult = 1 + (cov?.shdPct || 0) / 100;
           const typeBonus = d.type === 'zeus' ? 1.25 : d.type === 'apis' ? 1.18 : d.type === 'iris' ? 1.1 : 1.0;
@@ -4463,7 +4538,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             if (lid) {
               const it = ITEMS.find(i => i.id === lid);
               if (it) {
-                const val = it.dmg * getItemForgeMult(lid) * typeBonus * covDmgMult;
+                const val = it.dmg * getItemForgeMult(lid) * typeBonus * lvlDmgMult * covDmgMult;
                 laserDmg += val;
                 droneDmgTotal += val;
                 shipDroneLaserCount += 1;
@@ -4476,13 +4551,18 @@ const { useState, useEffect, useRef, useMemo } = React;
             if (sid) {
               const it = ITEMS.find(i => i.id === sid);
               if (it) {
-                const val = (it.shield || 0) * getItemForgeMult(sid) * typeBonus * covShdMult;
+                const val = (it.shield || 0) * getItemForgeMult(sid) * typeBonus * lvlShdMult * covShdMult;
                 extraShield += val;
                 droneShieldTotal += val;
               }
             }
           });
         });
+
+        const fullSetHavoc = ownedDronesTotal >= 10 && havocEquippedCount === 10;
+        const fullSetHercules = ownedDronesTotal >= 10 && herculesEquippedCount === 10;
+        const fullSetSpartan = ownedDronesTotal >= 10 && spartanEquippedCount === 10;
+        const activeDroneSetBonus = fullSetSpartan ? 'Valkyrie 10/10' : fullSetHavoc ? 'Fury 10/10' : fullSetHercules ? 'Bastion 10/10' : null;
 
         const skills = { ...createDefaultPilotSkills(), ...(state.pilotSkills || {}) };
         const hasThickLasers = (skills.bounty_2 || 0) >= 5;
@@ -4520,7 +4600,7 @@ const { useState, useEffect, useRef, useMemo } = React;
 
         let dmgMult = (1 + (skills.bounty || 0) * 0.02 + (skills.bounty_2 || 0) * 0.025 + (rBon.dmg || 0) + (cBon.dmg || 0) + (dBon.dmg || 0) + oreLaserBoost) * (form.dmgMult || 1);
         let shdMult = (1 + (skills.shielding || 0) * 0.04 + (rBon.shield || 0) + (cBon.shield || 0) + (dBon.shield || 0) + oreShieldBoost + laserShdBonus) * (form.shdMult || 1);
-        let hpMult = (1 + (rBon.hp || 0) + (cBon.hp || 0) + (dBon.hp || 0) + laserHpBonus) * (form.hpMult || 1);
+        let hpMult = (1 + (rBon.hp || 0) + (cBon.hp || 0) + (dBon.hp || 0) + laserHpBonus + (fullSetHercules || fullSetSpartan ? 0.10 : 0)) * (form.hpMult || 1);
         let repairBotPct = 0;
         let bestRepairBotName = null;
         let hasAutoRepairCpu = false;
@@ -4531,10 +4611,10 @@ const { useState, useEffect, useRef, useMemo } = React;
         let creditsMult = 1 + (skills.greed || 0) * 0.04 + (rBon.credits || 0) + (cBon.credits || 0) + premEconBonus;
         const tradeMult = creditsMult + rankTradeBonus;
         const uriMult = 1 + (cBon.uridium || 0);
-        const xpMult = (1 + (skills.luck_prestige || 0) * 0.03 + (rBon.xp || 0) + (cBon.xp || 0) + (dBon.xp || 0) + premEconBonus + clanComfortBonus) * (form.xpMult || 1);
-        const honorMult = (1 + (skills.luck_prestige || 0) * 0.03 + (rBon.honor || 0) + (cBon.honor || 0) + (dBon.honor || 0) + premEconBonus + clanComfortBonus) * (form.honorMult || 1);
-        const critChance = (skills.electro_optics || 0) * 0.02 + (cBon.crit || 0) + (form.critBonus || 0);
-        const shieldRegenMult = 1 + (cBon.shieldRegen || 0);
+        const xpMult = (1 + (skills.luck_prestige || 0) * 0.03 + (rBon.xp || 0) + (cBon.xp || 0) + (dBon.xp || 0) + premEconBonus + clanComfortBonus + (fullSetSpartan ? 0.08 : 0)) * (form.xpMult || 1);
+        const honorMult = (1 + (skills.luck_prestige || 0) * 0.03 + (rBon.honor || 0) + (cBon.honor || 0) + (dBon.honor || 0) + premEconBonus + clanComfortBonus + (fullSetSpartan ? 0.08 : 0)) * (form.honorMult || 1);
+        const critChance = (skills.electro_optics || 0) * 0.02 + (cBon.crit || 0) + (form.critBonus || 0) + (fullSetHavoc ? 0.05 : 0);
+        const shieldRegenMult = 1 + (cBon.shieldRegen || 0) + (fullSetHercules ? 0.10 : 0);
         let rocketMult = (1 + (skills.rocketry || 0) * 0.05 + (cBon.rocket || 0) + oreRocketBoost) * (form.rocketMult || 1);
         let hasAutoRocket = false;
         let hasAutoLauncher = false;
@@ -4632,7 +4712,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           bioCdMult,
           totalDmg: Math.max(60, Math.floor(laserDmg * dmgMult)),
           shipDroneLaserCount,
-          speed: Math.max(120, Math.floor((ship.speed + attackSpeedPts + (form.spdBonus || 0)) * (1 + oreSpeedBoost) * (isAdminShipActive && state.adminSpeedBoost ? 3 : 1))),
+          speed: Math.max(120, Math.floor((ship.speed + attackSpeedPts + (form.spdBonus || 0)) * (1 + oreSpeedBoost + (fullSetSpartan ? 0.05 : 0)) * (isAdminShipActive && state.adminSpeedBoost ? 3 : 1))),
           tradeMult, oreLaserBoost, oreRocketBoost, oreShieldBoost, oreSpeedBoost,
           attackSpeedPts,
           shotIntervalMs,
@@ -4644,6 +4724,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           droneStats: {
             totalDmg: Math.floor(droneDmgTotal * dmgMult),
             totalShield: Math.floor(droneShieldTotal * shdMult),
+            activeSetBonus: activeDroneSetBonus,
           },
           petStats: {
             owned: Boolean(state.pet?.owned),
@@ -6385,6 +6466,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   const killedXp = Math.max(10, Math.floor(c.enemy.xp * 0.80 * (curStats.xpMult || 1)));
                   const killedHonor = Math.max(1, Math.floor(c.enemy.honor * 0.85 * (curStats.honorMult || 1)));
                   const petXpGain = curStats.petStats?.active ? Math.max(120, Math.floor(killedXp * 0.35)) : 0;
+                  const droneXpGain = Math.max(80, Math.floor(killedXp * 0.45));
                   const xenMult = curStats.petStats?.hasPetLooter ? 1.15 : 1.0;
                   c.shockwaves.push({ x: eX, y: eY, r: c.enemy.radius * 0.6, maxR: c.enemy.radius + 34, color: c.enemy.color, alpha: 0.95 });
                   const npcLogNow = performance.now();
@@ -6446,6 +6528,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                         honor: prev.honor + killedHonor,
                         xenomit: prev.xenomit + Math.floor((3 + Math.random() * 5) * xenMult),
                         pet: prev.pet?.active ? { ...prev.pet, xp: (prev.pet.xp || 0) + petXpGain } : prev.pet,
+                        droneSlots: (prev.droneSlots || []).map(ds => ds && ds.type ? { ...ds, xp: Math.min(1000000, (ds.xp || 0) + droneXpGain) } : ds),
                         npcKills: { ...prev.npcKills, [killedName]: (prev.npcKills?.[killedName] || 0) + 1 },
                         activeGate: { ...prev.activeGate, remainingNpcs: remInWave }
                       }));
@@ -6464,6 +6547,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                           honor: prev.honor + killedHonor,
                           xenomit: prev.xenomit + Math.floor((5 + Math.random() * 8) * xenMult),
                           pet: prev.pet?.active ? { ...prev.pet, xp: (prev.pet.xp || 0) + petXpGain } : prev.pet,
+                        droneSlots: (prev.droneSlots || []).map(ds => ds && ds.type ? { ...ds, xp: Math.min(1000000, (ds.xp || 0) + droneXpGain) } : ds),
                           npcKills: { ...prev.npcKills, [killedName]: (prev.npcKills?.[killedName] || 0) + 1 },
                           activeGate: { id: activeGateObj.id, waveIndex: nextWaveIdx, remainingNpcs: 0 }
                         }));
@@ -6484,6 +6568,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                           honor: prev.honor + killedHonor,
                           xenomit: prev.xenomit + Math.floor((8 + Math.random() * 10) * xenMult),
                           pet: prev.pet?.active ? { ...prev.pet, xp: (prev.pet.xp || 0) + petXpGain } : prev.pet,
+                        droneSlots: (prev.droneSlots || []).map(ds => ds && ds.type ? { ...ds, xp: Math.min(1000000, (ds.xp || 0) + droneXpGain) } : ds),
                           npcKills: { ...prev.npcKills, [killedName]: (prev.npcKills?.[killedName] || 0) + 1 },
                           activeGate: { id: activeGateObj.id, waveIndex: curWaveIdx, remainingNpcs: 0, completed: true }
                         }));
@@ -6513,6 +6598,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                         xenomit: prev.xenomit + Math.floor((3 + Math.random() * 7) * xenMult),
                         logDisks: (prev.logDisks || 0) + (killedName.startsWith('Elite') ? 3 : killedName.startsWith('Boss') ? 2 : (Math.random() < 0.35 ? 1 : 0)),
                         pet: prev.pet?.active ? { ...prev.pet, xp: (prev.pet.xp || 0) + petXpGain } : prev.pet,
+                        droneSlots: (prev.droneSlots || []).map(ds => ds && ds.type ? { ...ds, xp: Math.min(1000000, (ds.xp || 0) + droneXpGain) } : ds),
                         ores: nextOres,
                         cargo: getTotalCargoUsed(nextOres),
                         npcKills: { ...prev.npcKills, [killedName]: (prev.npcKills?.[killedName] || 0) + 1 }
@@ -8510,12 +8596,15 @@ const { useState, useEffect, useRef, useMemo } = React;
                 ctx.translate(pX + dItem.rx, pY + dItem.ry);
                 ctx.rotate(shipHeading + smoothBank * 0.65);
 
-                const dSpriteImg = DRONE_IMAGE_CACHE[dSlot.type] || DRONE_IMAGE_CACHE.flax;
+                const dLvlObj = getDroneLevelInfo(dSlot.xp || 0);
+                const dSpriteKey = getDroneSpriteKey(dSlot.type, dLvlObj.lvl, covId);
+                const dSpriteImg = DRONE_IMAGE_CACHE[dSpriteKey] || DRONE_IMAGE_CACHE[dSlot.type] || DRONE_IMAGE_CACHE.flax;
                 if (dSpriteImg && dSpriteImg.complete && dSpriteImg.naturalWidth > 0) {
+                  const lvlScaleBonus = (dLvlObj.lvl - 1) * 0.7;
                   const dDrawSize =
-                    dSlot.type === 'zeus' ? 20 :
+                    (dSlot.type === 'zeus' ? 20 :
                     dSlot.type === 'apis' ? 19 :
-                    dSlot.type === 'iris' ? 17 : 15;
+                    dSlot.type === 'iris' ? 17 : 15) + lvlScaleBonus;
                   if (covId) {
                     const auraR = dDrawSize * 0.68;
                     const cAura = ctx.createRadialGradient(0, 0, 2, 0, 0, auraR);
@@ -13835,6 +13924,52 @@ const { useState, useEffect, useRef, useMemo } = React;
                         />
                       </div>
 
+                      {/* Admin Drone Evolution Test Helper */}
+                      <div className="flex items-center justify-between gap-1.5 bg-slate-950/85 border border-slate-800 rounded-lg px-2 py-1.5">
+                        <span className="text-[9px] font-black text-cyan-300">🛸 Test Evoluție Drone (Lvl 1–6):</span>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setState(p => ({
+                                ...p,
+                                droneSlots: (p.droneSlots || []).map(ds => ds && ds.type ? { ...ds, xp: Math.min(1000000, (ds.xp || 0) + 160000) } : ds)
+                              }));
+                              notify('🛸 +160.000 Drone XP adăugat tuturor dronelor!');
+                            }}
+                            className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-400 text-[8.5px] font-black text-cyan-200 active:scale-95"
+                          >
+                            +1 Lvl
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setState(p => ({
+                                ...p,
+                                droneSlots: (p.droneSlots || []).map(ds => ds && ds.type ? { ...ds, xp: 1000000 } : ds)
+                              }));
+                              notify('👑 Toate dronele au fost evoluate la Lvl 6 (Apex)!');
+                            }}
+                            className="px-2 py-0.5 rounded bg-amber-950 border border-amber-400 text-[8.5px] font-black text-amber-200 active:scale-95"
+                          >
+                            Max Lv.6
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setState(p => ({
+                                ...p,
+                                droneSlots: (p.droneSlots || []).map(ds => ds && ds.type ? { ...ds, xp: 0 } : ds)
+                              }));
+                              notify('↺ Dronele au fost resetate la Lvl 1.');
+                            }}
+                            className="px-2 py-0.5 rounded bg-slate-900 border border-slate-600 text-[8.5px] font-black text-slate-300 active:scale-95"
+                          >
+                            Lv.1
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Registered Players List */}
                       <div className="max-h-48 overflow-y-auto space-y-1.5 pr-0.5">
                         {adminPlayersList
@@ -15395,7 +15530,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.36.1 (Supabase Cloud Server)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.37 (Drone Evolution Lvl 1–6 & Cover Designs)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
@@ -19020,6 +19155,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                             const dCfg = d.configs?.[state.activeConfig] || createEmptyDronesLoadout();
                             const unlocked = d.type !== null;
                             const covObj = dCfg.cover ? ITEMS.find(i => i.id === dCfg.cover) : null;
+                            const dLvlInfo = getDroneLevelInfo(d.xp || 0);
                             const maxSlots = d.type === 'flax' ? 1 : 2;
                             const slotLabel = idx === 8 ? 'Helios' : idx === 9 ? 'Aether' : d.type ? getDroneDisplayName(d.type) : `#${idx + 1}`;
                             const isSel = selectedDrones === idx;
@@ -19046,13 +19182,34 @@ const { useState, useEffect, useRef, useMemo } = React;
                               >
                                 <div className="flex items-center gap-1 min-w-0">
                                   {unlocked ? (
-                                    <DronesSVG color={droneIconColor} size={19} droneType={d.type} coverId={dCfg?.cover || null} />
+                                    <DronesSVG color={droneIconColor} size={20} droneType={d.type} droneLvl={dLvlInfo.lvl} coverId={dCfg?.cover || null} />
                                   ) : (
                                     <span className="text-[8.5px] shrink-0">🔒</span>
                                   )}
-                                  <span className={`text-[8.5px] font-bold truncate ${isSel ? 'text-amber-300' : 'text-slate-100'}`}>
-                                    {slotLabel}
-                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1">
+                                      <span className={`text-[8.5px] font-bold truncate ${isSel ? 'text-amber-300' : 'text-slate-100'}`}>
+                                        {slotLabel}
+                                      </span>
+                                      {unlocked && (
+                                        <span className={`px-1 rounded text-[7px] font-black shrink-0 ${
+                                          dLvlInfo.lvl >= 6
+                                            ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50'
+                                            : 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
+                                        }`}>
+                                          Lv.{dLvlInfo.lvl}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {unlocked && (
+                                      <div className="w-full h-1 rounded-full bg-slate-950 overflow-hidden mt-0.5">
+                                        <div
+                                          className={`h-full transition-all ${dLvlInfo.lvl >= 6 ? 'bg-amber-400' : 'bg-cyan-400'}`}
+                                          style={{ width: `${dLvlInfo.progressPct}%` }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
                                   {d.type === 'flax' && isSel && (
                                     <button
                                       type="button"
@@ -19481,14 +19638,24 @@ const { useState, useEffect, useRef, useMemo } = React;
                   {/* Context-Aware Live Specifications Bar (Ship vs Droness vs A.I.D.) */}
                   {equipSubTab === 'drones' ? (() => {
                     const selD = currentDronesObj;
+                    const selLvl = selD?.type ? getDroneLevelInfo(selD.xp || 0) : null;
                     const selLabel = selectedDrones === 8 ? 'Helios' : selectedDrones === 9 ? 'Aether' : selD?.type ? getDroneDisplayName(selD.type) : `#${selectedDrones + 1}`;
-                    const selBonus = selD?.type === 'zeus' ? '+25%' : selD?.type === 'apis' ? '+18%' : selD?.type === 'iris' ? '+10%' : selD?.type === 'flax' ? '0%' : '—';
+                    const selBonus = selD?.type
+                      ? `Lv.${selLvl.lvl} (+${selLvl.dmgBonusPct}%D/+${selLvl.shdBonusPct}%S)`
+                      : '—';
                     return (
-                      <div className="mt-auto pt-1.5 px-1.5 grid grid-cols-4 gap-1 text-center text-[8.5px] font-mono text-slate-300">
-                        <div>FLOTĂ <b className="text-cyan-200">{activeDronessList.length}/10</b></div>
-                        <div>SHD <b className="text-cyan-300">+{fmt(stats.droneStats?.totalShield || 0)}</b></div>
-                        <div>DMG <b className="text-amber-300">+{fmt(stats.droneStats?.totalDmg || 0)}</b></div>
-                        <div>{selLabel} <b className="text-emerald-300">{selBonus}</b></div>
+                      <div className="mt-auto pt-1.5 px-1.5 space-y-0.5">
+                        <div className="grid grid-cols-4 gap-1 text-center text-[8px] font-mono text-slate-300">
+                          <div>FLOTĂ <b className="text-cyan-200">{activeDronessList.length}/10</b></div>
+                          <div>SHD <b className="text-cyan-300">+{fmt(stats.droneStats?.totalShield || 0)}</b></div>
+                          <div>DMG <b className="text-amber-300">+{fmt(stats.droneStats?.totalDmg || 0)}</b></div>
+                          <div className="truncate">{selLabel} <b className="text-emerald-300">{selBonus}</b></div>
+                        </div>
+                        {stats.droneStats?.activeSetBonus && (
+                          <div className="text-center text-[8px] font-black text-amber-300">
+                            ★ SET COMPLET ACTIV: {stats.droneStats.activeSetBonus}
+                          </div>
+                        )}
                       </div>
                     );
                   })() : equipSubTab === 'pet' ? (
