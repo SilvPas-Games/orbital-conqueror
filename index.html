@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.39 (Live Space Multiplayer & Persistent Space Broadcasts)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.39.1 (Live Space Multiplayer & Fantom-Only Cloak)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.39',
+      version: '1.39.1',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.39',
+        version: '1.39.1',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -2108,6 +2108,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         activeConfig: parsed.activeConfig === 2 ? 2 : 1,
         adminAutoSlotUnlocked: Boolean(parsed.adminAutoSlotUnlocked),
         adminSpeedBoost: Boolean(parsed.adminSpeedBoost),
+        adminStealth: false,
         adminBootySundayActive: Boolean(parsed.adminBootySundayActive),
         premiumActive: Boolean(parsed.premiumActive),
         pilotId: typeof parsed.pilotId === 'string' && /^OC-\d{6}$/.test(parsed.pilotId)
@@ -3453,6 +3454,13 @@ const { useState, useEffect, useRef, useMemo } = React;
     }
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
+      {
+        title: 'v1.39.1 • Fantom-Only Active Cloak & Instant Bidirectional Multiplayer Sync',
+        items: [
+          'Removed the Stealth Cloak toggle from the Admin Panel and from "Activează Tot" so invisibility exists exclusively as an active combat ability (Fantom Total Cloak) upon explicit skill activation.',
+          'Added instant bidirectional Realtime broadcast sync upon sector entry and movement so all pilots in the same sector see each other immediately.'
+        ]
+      },
       {
         title: 'v1.39 • Live Space Multiplayer (Supabase Realtime) & Persistent Space Announcements',
         items: [
@@ -5031,8 +5039,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             rankId: rInf?.current?.id || 1,
             isAdmin: Boolean(stNow.adminUnlocked && stNow.adminRankActive),
             isStealthed: Boolean(
-              (curSt?.ship?.id === 'sovereign_admin' && stNow.adminUnlocked && stNow.adminStealth) ||
-              (curSt?.ship?.id === 'fantom' && performance.now() < (cNow.shipSkillActiveUntil?.ft_total_cloak || 0))
+              curSt?.ship?.id === 'fantom' && performance.now() < (cNow.shipSkillActiveUntil?.ft_total_cloak || 0)
             ),
             inSpace: tabRef.current === 'space' && !stNow.activeGate && !destroyedRef.current,
             sectorId: resolvedSec,
@@ -5108,10 +5115,18 @@ const { useState, useEffect, useRef, useMemo } = React;
               renderHeading: prevEntry?.renderHeading ?? Number(payload.heading ?? 0),
               lastSeenAt: performance.now(),
             };
+            const mySec = resolvePortalTargetId(stateRef.current.sectorId || 'main', stateRef.current.companyId);
+            const inSec = Object.values(remotePlayersRef.current).filter(
+              rp => rp && rp.uid !== myUid && rp.inSpace && rp.sectorId === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 15000)
+            );
+            setOnlineSectorPilots(inSec);
+            setOnlineGlobalCount(Math.max(1, Object.keys(remotePlayersRef.current).length + 1));
           })
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-              await channel.track(buildMyPacket());
+              const initPkt = buildMyPacket();
+              await channel.track(initPkt);
+              channel.send({ type: 'broadcast', event: 'ship_move', payload: initPkt });
             }
           });
 
@@ -5120,7 +5135,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           channel.send({ type: 'broadcast', event: 'ship_move', payload: pkt });
           const mySec = resolvePortalTargetId(stateRef.current.sectorId || 'main', stateRef.current.companyId);
           const inSec = Object.values(remotePlayersRef.current).filter(
-            rp => rp && rp.uid !== myUid && rp.inSpace && rp.sectorId === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 12000)
+            rp => rp && rp.uid !== myUid && rp.inSpace && rp.sectorId === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 15000)
           );
           setOnlineSectorPilots(inSec);
         }, 280);
@@ -9267,7 +9282,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             if (!activeGateObj && remotePlayersRef.current) {
               Object.values(remotePlayersRef.current).forEach(rp => {
                 if (!rp || !rp.inSpace || rp.isStealthed || rp.sectorId !== myResolvedSecCanvas) return;
-                if (now - (rp.lastSeenAt || 0) > 12000) return;
+                if (now - (rp.lastSeenAt || 0) > 15000) return;
 
                 // Smooth position & heading interpolation
                 rp.renderX = (rp.renderX ?? rp.targetX) + ((rp.targetX ?? rp.renderX) - (rp.renderX ?? rp.targetX)) * Math.min(1, dtSec * 10);
@@ -14105,7 +14120,7 @@ const { useState, useEffect, useRef, useMemo } = React;
               const isAdminComboOn = Boolean(state.activeShipId === 'sovereign_admin' && state.adminRankActive);
               const allGodOn = Boolean(
                 godMode.hp && godMode.shield && godMode.attack &&
-                state.adminOverdrive && state.adminReactorCore && state.adminStealth
+                state.adminOverdrive && state.adminReactorCore
               );
               const filteredHistory = ORIGINAL_CHANGELOG_SECTIONS.filter(sec => {
                 const q = (adminHistorySearch || '').trim().toLowerCase();
@@ -14911,7 +14926,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                               ...p,
                               adminOverdrive: nextAll,
                               adminReactorCore: nextAll,
-                              adminStealth: nextAll
+                              adminStealth: false
                             }));
                             notify(nextAll ? '👑 TOATE BOOSTURILE ACTIVE!' : 'Toate boosturile dezactivate.');
                           }}
@@ -15015,23 +15030,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                           <div className="text-[8px] text-slate-400 leading-tight mt-0.5">Regenerare în luptă (+15% HP/s & +18% SHD/s)</div>
                         </button>
 
-                        <button
-                          onClick={() => {
-                            setState(p => {
-                              const next = !p.adminStealth;
-                              notify(next ? '👻 Stealth: ON' : '👻 Stealth: OFF');
-                              return { ...p, adminStealth: next };
-                            });
-                          }}
-                          className={`py-1.5 px-2 rounded-lg text-left border active:scale-95 transition ${
-                            state.adminStealth
-                              ? 'bg-purple-950/90 border-purple-400 text-purple-200 shadow-[0_0_8px_rgba(192,132,252,0.28)]'
-                              : 'bg-slate-950/85 border-slate-700 text-slate-300'
-                          }`}
-                        >
-                          <div className="text-[9.5px] font-black">👻 Stealth Cloak: {state.adminStealth ? 'ON' : 'OFF'}</div>
-                          <div className="text-[8px] text-slate-400 leading-tight mt-0.5">Camuflaj Fantom (28% translucid pentru tine, invizibil pentru NPC & playeri)</div>
-                        </button>
+
 
 
                       </div>
@@ -15927,7 +15926,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.39 (Live Space Multiplayer & Persistent Space Broadcasts)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.39.1 (Live Space Multiplayer & Fantom-Only Cloak)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
