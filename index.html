@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.41 (Live PvP Combat, Server Hall of Fame & Galaxy Chat)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.42 (Persistent Supabase Chat & Admin Chat Monitor)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.41',
+      version: '1.42',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.41',
+        version: '1.42',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -3455,6 +3455,13 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.42 • Persistent Supabase Chat Storage (Table Editor) & Admin Chat Monitor',
+        items: [
+          'Connected Space Galaxy Chat directly to the Supabase `chat_messages` table so all messages persist across sessions, appear in Supabase Table Editor, and preload the latest 25 messages upon login.',
+          'Added a live Chat History & Moderation panel inside the Admin Command Center with refresh, single-message delete, and clear-all controls.'
+        ]
+      },
+      {
         title: 'v1.41 • Active Live PvP Combat, Server Hall of Fame & Live Galaxy Chat',
         items: [
           'Enabled active Two-Tap PvP Combat in PvP sectors (4-1 through 4-4) and rival company maps with live Supabase Realtime hit synchronization, red target lock rings, and floating damage indicators.',
@@ -3905,6 +3912,8 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [globalEvents, setGlobalEvents] = useState({ gold_booty_active: false, double_xp_active: false, announcement: '', maintenance_active: false, maintenance_message: 'Server is currently under maintenance for a new update. We will be back online shortly!' });
       const [adminPlayersList, setAdminPlayersList] = useState([]);
       const [adminPlayersLoading, setAdminPlayersLoading] = useState(false);
+      const [adminChatLogs, setAdminChatLogs] = useState([]);
+      const [adminChatLoading, setAdminChatLoading] = useState(false);
       const [adminPlayerSearch, setAdminPlayerSearch] = useState('');
       const [adminGiftCr, setAdminGiftCr] = useState('100000');
       const [adminGiftAst, setAdminGiftAst] = useState('5000');
@@ -4959,6 +4968,28 @@ const { useState, useEffect, useRef, useMemo } = React;
             setCloudSyncStatus('synced');
           }
 
+          // Fetch recent persistent Galaxy Chat messages from Supabase `chat_messages`
+          try {
+            const { data: chatRows } = await supabaseClient
+              .from('chat_messages')
+              .select('id, pilot_name, clan_tag, company_id, sector_id, message, created_at')
+              .order('created_at', { ascending: false })
+              .limit(25);
+            if (Array.isArray(chatRows) && chatRows.length > 0) {
+              setSpaceChatMessages(
+                chatRows.reverse().map(r => ({
+                  id: String(r.id),
+                  sender: r.pilot_name || 'Pilot',
+                  clanTag: r.clan_tag || null,
+                  companyId: r.company_id || null,
+                  sectorId: r.sector_id || '1-1',
+                  text: r.message || '',
+                  ts: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+                }))
+              );
+            }
+          } catch (e) {}
+
           // Fetch global events from server
           const { data: evData } = await supabaseClient
             .from('global_events')
@@ -5229,7 +5260,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           setOnlineSectorPilots(inSec);
         };
         combatRef.current.broadcastNow = pushLiveStateNow;
-        combatRef.current.sendSectorChat = (rawMsg) => {
+        combatRef.current.sendSectorChat = async (rawMsg) => {
           const cleanText = String(rawMsg || '').trim().slice(0, 140);
           if (!cleanText) return;
           const stNow = stateRef.current;
@@ -5245,6 +5276,17 @@ const { useState, useEffect, useRef, useMemo } = React;
           };
           setSpaceChatMessages(prev => [...prev.slice(-24), msgObj]);
           channel.send({ type: 'broadcast', event: 'sector_chat', payload: msgObj });
+          try {
+            await supabaseClient.from('chat_messages').insert({
+              user_id: myUid,
+              pilot_id: stNow.pilotId || 'OC-000000',
+              pilot_name: stNow.playerName || 'Pilot',
+              clan_tag: stNow.clan?.tag || null,
+              company_id: stNow.companyId || null,
+              sector_id: secCode || '1-1',
+              message: cleanText,
+            });
+          } catch (err) {}
         };
         combatRef.current.sendPvpHit = (targetUid, dmgVal) => {
           if (!targetUid || !dmgVal) return;
@@ -5298,9 +5340,26 @@ const { useState, useEffect, useRef, useMemo } = React;
         setAdminPlayersLoading(false);
       };
 
+      const fetchChatLogsForAdmin = async () => {
+        if (!supabaseClient || !state.adminUnlocked) return;
+        setAdminChatLoading(true);
+        try {
+          const { data, error } = await supabaseClient
+            .from('chat_messages')
+            .select('id, pilot_id, pilot_name, clan_tag, company_id, sector_id, message, created_at')
+            .order('created_at', { ascending: false })
+            .limit(40);
+          if (!error && Array.isArray(data)) {
+            setAdminChatLogs(data);
+          }
+        } catch (err) {}
+        setAdminChatLoading(false);
+      };
+
       useEffect(() => {
         if (showAdminModal && state.adminUnlocked) {
           fetchAllPlayersForAdmin();
+          fetchChatLogsForAdmin();
         }
       }, [showAdminModal, state.adminUnlocked]);
 
@@ -14697,6 +14756,76 @@ const { useState, useEffect, useRef, useMemo } = React;
                             );
                           })}
                       </div>
+
+                      {/* Live Galaxy Chat Monitor (Supabase `chat_messages` Table) */}
+                      <div className="pt-2 border-t border-cyan-500/20 space-y-1.5">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-[9.5px] font-black text-emerald-300 uppercase">
+                            💬 Istoric Chat Server ({adminChatLogs.length})
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={fetchChatLogsForAdmin}
+                              className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-400/60 text-[8.5px] font-black text-cyan-200 active:scale-95"
+                            >
+                              {adminChatLoading ? '...' : '↻ Refresh'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!supabaseClient) return;
+                                await supabaseClient.from('chat_messages').delete().neq('id', 0);
+                                setAdminChatLogs([]);
+                                setSpaceChatMessages([]);
+                                notify('🧹 Istoricul chatului a fost șters din Supabase!');
+                              }}
+                              className="px-2 py-0.5 rounded bg-rose-950 border border-rose-400/60 text-[8.5px] font-black text-rose-200 active:scale-95"
+                            >
+                              🧹 Clear
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="max-h-36 overflow-y-auto space-y-1 pr-0.5 bg-slate-950/80 rounded-lg p-1.5 border border-slate-800">
+                          {adminChatLogs.length === 0 ? (
+                            <div className="text-[8.5px] text-slate-400 text-center py-2">
+                              Niciun mesaj salvat în tabela <span className="font-mono text-cyan-300">chat_messages</span> încă.
+                            </div>
+                          ) : (
+                            adminChatLogs.map(cm => {
+                              const cObj = getCompanyById(cm.company_id);
+                              const timeLabel = cm.created_at
+                                ? new Date(cm.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+                                : '';
+                              return (
+                                <div key={cm.id} className="flex items-start justify-between gap-1.5 text-[8.5px] bg-slate-900/75 rounded px-1.5 py-1 border border-white/5">
+                                  <div className="min-w-0 flex-1 break-words leading-snug">
+                                    <span className="text-[7.5px] font-mono text-slate-400">{timeLabel} [{cm.sector_id || '1-1'}] </span>
+                                    <span className="font-black" style={{ color: cObj?.color || '#38bdf8' }}>
+                                      {cm.clan_tag ? `[${cm.clan_tag}] ` : ''}{cm.pilot_name}
+                                    </span>
+                                    <span className="text-[7.5px] font-mono text-slate-400"> ({cm.pilot_id})</span>:
+                                    <span className="text-slate-100 ml-1">{cm.message}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      if (!supabaseClient) return;
+                                      await supabaseClient.from('chat_messages').delete().eq('id', cm.id);
+                                      setAdminChatLogs(prev => prev.filter(x => x.id !== cm.id));
+                                    }}
+                                    title="Șterge mesajul"
+                                    className="text-[8px] px-1 rounded bg-rose-950/80 text-rose-300 shrink-0"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {/* BLOCK 1: Activare Admin — Activate in top-right; Left: 3D Ship; Right: Frameless Rank + Line + SilvPas Ship & Specs */}
@@ -16155,7 +16284,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.41 (Live PvP Combat, Server Hall of Fame & Galaxy Chat)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.42 (Persistent Supabase Chat & Admin Chat Monitor)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
