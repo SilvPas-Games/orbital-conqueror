@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.37 (Drone Evolution Lvl 1-6 & Cover Designs)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.37.1 (Drone Shop Fix & Server Maintenance)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.37',
+      version: '1.37.1',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.37',
+        version: '1.37.1',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -3842,13 +3842,14 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [authErrorMsg, setAuthErrorMsg] = useState('');
       const [authSubmitting, setAuthSubmitting] = useState(false);
       const [cloudSyncStatus, setCloudSyncStatus] = useState('offline'); // 'offline' | 'syncing' | 'synced' | 'error'
-      const [globalEvents, setGlobalEvents] = useState({ gold_booty_active: false, double_xp_active: false, announcement: '' });
+      const [globalEvents, setGlobalEvents] = useState({ gold_booty_active: false, double_xp_active: false, announcement: '', maintenance_active: false, maintenance_message: 'Serverul este în mentenanță pentru un nou update. Revenim în curând!' });
       const [adminPlayersList, setAdminPlayersList] = useState([]);
       const [adminPlayersLoading, setAdminPlayersLoading] = useState(false);
       const [adminPlayerSearch, setAdminPlayerSearch] = useState('');
       const [adminGiftCr, setAdminGiftCr] = useState('100000');
       const [adminGiftAst, setAdminGiftAst] = useState('5000');
       const [adminAnnouncementInput, setAdminAnnouncementInput] = useState('');
+      const [adminMaintMsgInput, setAdminMaintMsgInput] = useState('Serverul este în mentenanță pentru un nou update. Revenim în curând!');
       const cloudReadyToSaveRef = useRef(false);
       const [toast, setToast] = useState(null);
       const [shipDestroyed, setShipDestroyed] = useState(false);
@@ -4898,6 +4899,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           if (evData) {
             setGlobalEvents(evData);
             setAdminAnnouncementInput(evData.announcement || '');
+            if (evData.maintenance_message) setAdminMaintMsgInput(evData.maintenance_message);
           }
         } catch (err) {
           setAuthErrorMsg(err?.message || 'Eroare de conexiune la Supabase.');
@@ -4942,19 +4944,23 @@ const { useState, useEffect, useRef, useMemo } = React;
         };
       }, []);
 
-      // Periodic Cloud Auto-Save (every 8 seconds when logged in) + Global Events Sync
+      // Periodic Cloud Auto-Save (every 8 seconds when logged in) + Global Events / Maintenance Sync
       useEffect(() => {
-        if (!supabaseClient || !authSession?.user?.id) return;
-        const syncIv = setInterval(async () => {
-          if (cloudReadyToSaveRef.current) {
-            await syncProfileToCloud(stateRef.current, authSession.user.id);
-          }
+        if (!supabaseClient) return;
+        const pollEvents = async () => {
           const { data: evData } = await supabaseClient
             .from('global_events')
             .select('*')
             .eq('id', 1)
             .maybeSingle();
           if (evData) setGlobalEvents(evData);
+        };
+        pollEvents();
+        const syncIv = setInterval(async () => {
+          if (authSession?.user?.id && cloudReadyToSaveRef.current) {
+            await syncProfileToCloud(stateRef.current, authSession.user.id);
+          }
+          await pollEvents();
         }, 8000);
         return () => clearInterval(syncIv);
       }, [authSession?.user?.id]);
@@ -12001,13 +12007,13 @@ const { useState, useEffect, useRef, useMemo } = React;
           return [
             {
               id: 'flax_unit', type: 'drone_flax', name: `Drone Vesper (${pool8Count}/8)`,
-              stat: '1 Laser + 1 Shield + 1 Drone Core (x1.5/drone)',
+              stat: '1 Laser + 1 Shield + 1 Core • Evolves Lv.1→6 (+10%D/+15%S)',
               desc: poolFull ? 'Standard slots 1–8 are full (8/8)' : 'Light Credits drone for slots 1–8',
               price: flaxPrice, currency: 'credits', color: '#ffffff', isFull: poolFull
             },
             {
               id: 'iris_unit', type: 'drone_iris', name: `Drone Orion (${pool8Count}/8)`,
-              stat: '2 Lasers + 2 Shields + 1 Drone Core (+10% • x1.5/drone)',
+              stat: '2 Lasers + 2 Shields + 1 Core (+10% • Evolves Lv.1→6)',
               desc: poolFull ? 'Standard slots 1–8 are full (8/8)' : 'Advanced Astralite drone for slots 1–8',
               price: irisPrice, currency: 'uridium', color: '#ffffff', isFull: poolFull
             },
@@ -12325,6 +12331,45 @@ const { useState, useEffect, useRef, useMemo } = React;
                   )}
                 </>
               )}
+            </div>
+          </div>
+        );
+      }
+
+      if (globalEvents?.maintenance_active && !state.adminUnlocked && authProfile?.role !== 'admin') {
+        return (
+          <div className="w-full h-[100dvh] bg-[#020813] text-slate-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-[390px] bg-gradient-to-b from-[#170b18] to-[#030b17] border-2 border-amber-400/80 rounded-2xl p-5 space-y-3.5 text-center shadow-[0_0_40px_rgba(250,204,21,0.22)]">
+              <div className="text-3xl">🛠️</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">Orbital Conqueror • Server Status</div>
+              <div className="text-base font-black text-white uppercase">Mentenanță Server în Curs</div>
+              <div className="bg-slate-950/90 border border-amber-400/35 rounded-xl p-3 text-xs text-amber-100 leading-relaxed">
+                {globalEvents.maintenance_message || 'Serverul este în mentenanță pentru un nou update. Revenim în curând!'}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                Progresul contului tău este salvat în siguranță în cloud. Pagina se verifică automat la fiecare 8 secunde.
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!supabaseClient) return;
+                    const { data: evData } = await supabaseClient.from('global_events').select('*').eq('id', 1).maybeSingle();
+                    if (evData) setGlobalEvents(evData);
+                    notify(evData?.maintenance_active ? '🛠️ Mentenanța este încă activă.' : '✅ Serverul este online!');
+                  }}
+                  className="flex-1 py-2 rounded-xl bg-cyan-950 border border-cyan-400 text-xs font-black text-cyan-200 active:scale-95"
+                >
+                  ↻ Verifică Acum
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloudLogout}
+                  className="py-2 px-3 rounded-xl bg-slate-900 border border-slate-600 text-xs font-bold text-slate-300"
+                >
+                  Ieșire
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -13898,6 +13943,77 @@ const { useState, useEffect, useRef, useMemo } = React;
                             className="px-2.5 py-1 rounded bg-emerald-950 border border-emerald-400 text-[9px] font-black text-emerald-200"
                           >
                             Trimite
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Server Maintenance Mode Control (Admin Only Access) */}
+                      <div className={`rounded-lg p-2 space-y-1.5 border ${
+                        globalEvents.maintenance_active
+                          ? 'bg-rose-950/75 border-rose-400/80'
+                          : 'bg-slate-950/85 border-slate-800'
+                      }`}>
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-[9px] font-black text-rose-300 uppercase">🛠️ Mod Mentenanță Server</span>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!supabaseClient) return;
+                              const nextMaint = !globalEvents.maintenance_active;
+                              const { data, error } = await supabaseClient
+                                .from('global_events')
+                                .update({
+                                  maintenance_active: nextMaint,
+                                  maintenance_message: adminMaintMsgInput.trim() || 'Serverul este în mentenanță pentru un nou update. Revenim în curând!',
+                                  updated_at: new Date().toISOString()
+                                })
+                                .eq('id', 1)
+                                .select()
+                                .single();
+                              if (error) {
+                                notify('⚠️ Rulează mai întâi SQL-ul pentru maintenance_active în Supabase!');
+                                return;
+                              }
+                              if (data) setGlobalEvents(data);
+                              notify(nextMaint ? '🛠️ MENTENANȚĂ ACTIVATĂ! Doar Adminii pot intra în joc.' : '✅ Mentenanță oprită! Serverul este deschis tuturor.');
+                            }}
+                            className={`px-2.5 py-1 rounded border text-[9px] font-black active:scale-95 ${
+                              globalEvents.maintenance_active
+                                ? 'bg-rose-600 border-rose-200 text-white animate-pulse'
+                                : 'bg-slate-900 border-rose-500/60 text-rose-200'
+                            }`}
+                          >
+                            {globalEvents.maintenance_active ? '🛠️ MENTENANȚĂ: ON' : '🛠️ MENTENANȚĂ: OFF'}
+                          </button>
+                        </div>
+                        <div className="flex gap-1">
+                          <input
+                            value={adminMaintMsgInput}
+                            onChange={e => setAdminMaintMsgInput(e.target.value)}
+                            placeholder="Mesaj afișat jucătorilor în timpul mentenanței..."
+                            className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[9px] text-white outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!supabaseClient) return;
+                              const { data, error } = await supabaseClient
+                                .from('global_events')
+                                .update({
+                                  maintenance_message: adminMaintMsgInput.trim() || 'Serverul este în mentenanță pentru un nou update. Revenim în curând!',
+                                  updated_at: new Date().toISOString()
+                                })
+                                .eq('id', 1)
+                                .select()
+                                .single();
+                              if (!error && data) {
+                                setGlobalEvents(data);
+                                notify('💾 Mesaj mentenanță salvat!');
+                              }
+                            }}
+                            className="px-2 py-1 rounded bg-slate-800 border border-slate-600 text-[8.5px] font-black text-slate-200"
+                          >
+                            Salvează
                           </button>
                         </div>
                       </div>
@@ -15530,7 +15646,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.37 (Drone Evolution Lvl 1–6 & Cover Designs)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.37.1 (Drone Evolution & Maintenance Mode)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
@@ -15881,6 +15997,18 @@ const { useState, useEffect, useRef, useMemo } = React;
                 <div className="min-h-full flex flex-col justify-between gap-2 py-0.5">
                   {/* TOP SECTION: Glassmorphic Pilot Identity Card + News / Admin / Hall of Fame */}
                   <div className="space-y-1.5">
+                    {globalEvents?.maintenance_active && (
+                      <div className="rounded-xl bg-rose-950/90 border border-rose-400/80 px-2.5 py-1 flex items-center justify-between gap-2">
+                        <span className="text-[9.5px] font-black text-rose-200">🛠️ MOD MENTENANȚĂ ACTIV (Doar Adminii au acces)</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminModal(true)}
+                          className="text-[8.5px] font-black px-1.5 py-0.5 rounded bg-rose-600 text-white"
+                        >
+                          Admin
+                        </button>
+                      </div>
+                    )}
                     {globalEvents?.announcement && (
                       <div className="rounded-xl bg-amber-950/85 border border-amber-400/70 px-2.5 py-1.5 flex items-center gap-2 shadow-[0_0_14px_rgba(250,204,21,0.22)]">
                         <span className="text-xs">📢</span>
@@ -16312,7 +16440,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 }}
                                 className="absolute z-20 transition-transform duration-300"
                               >
-                                <DronesSVG color={dCol} size={18} droneType={dSlot.type} coverId={dCfgSlot.cover || null} />
+                                <DronesSVG color={dCol} size={22} droneType={dSlot.type} droneLvl={getDroneLevelInfo(dSlot.xp || 0).lvl} coverId={dCfgSlot.cover || null} />
                               </div>
                             );
                           })}
@@ -19979,7 +20107,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 ) : isDroneFormationEntry ? (
                                   <FormationIconSVG formationId={entry.formationId} color={entry.color} size={32} />
                                 ) : (
-                                  <DronesSVG color={dronePreviewColor} size={34} droneType={isCoverEntry ? "iris" : (entry.type?.replace("drone_", "") || "flax")} coverId={isCoverEntry ? entry.id : null} />
+                                  <DronesSVG color={dronePreviewColor} size={42} droneType={isCoverEntry ? "iris" : (entry.type?.replace("drone_", "") || "flax")} droneLvl={6} coverId={isCoverEntry ? entry.id : null} />
                                 )}
                               </div>
                             )}
