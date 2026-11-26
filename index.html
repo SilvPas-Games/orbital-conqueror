@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.35</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.36 (Online Cloud Server)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -26,6 +26,7 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     html, body, #root { margin: 0; padding: 0; width: 100%; height: 100dvh; background-color: #020813; overflow: hidden; -webkit-tap-highlight-color: transparent; }
     ::-webkit-scrollbar { width: 4px; }
@@ -868,7 +869,134 @@ const { useState, useEffect, useRef, useMemo } = React;
             check: (st) => {
               const baseline = st.missionBaselineKills?.[t.npc] ?? 0;
               const cur = st.npcKills?.[t.npc] || 0;
-              return (cur - baseline) >= t.count;
+              if (authLoading) {
+        return (
+          <div className="w-full h-[100dvh] bg-[#020813] text-slate-100 flex flex-col items-center justify-center p-4">
+            <div className="w-12 h-12 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-3" />
+            <div className="text-xs font-black tracking-widest uppercase text-cyan-300">Conectare la Serverul Orbital Conqueror...</div>
+            <div className="text-[10px] text-slate-400 mt-1">Sincronizare profil pilot & bază de date</div>
+          </div>
+        );
+      }
+
+      if (!authSession || authProfile?.is_banned) {
+        return (
+          <div className="w-full h-[100dvh] bg-[#020813] text-slate-100 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-[390px] bg-gradient-to-b from-[#07182c] to-[#030b17] border-2 border-cyan-400/70 rounded-2xl p-4 space-y-3.5 shadow-[0_0_40px_rgba(34,211,238,0.22)]">
+              <div className="text-center space-y-1 border-b border-cyan-800/70 pb-3">
+                <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">SilvPas Idle Games • Online Server</div>
+                <div className="text-lg font-black text-white tracking-wide">ORBITAL CONQUEROR</div>
+                <div className="text-[10px] text-cyan-300">Conturi Persistente în Cloud • v1.36</div>
+              </div>
+
+              {authProfile?.is_banned ? (
+                <div className="bg-rose-950/90 border border-rose-400 rounded-xl p-3 text-center space-y-2">
+                  <div className="text-xs font-black text-rose-200 uppercase">⛔ Cont Suspendat</div>
+                  <div className="text-[10.5px] text-rose-100">{authProfile.ban_reason || 'Accesul acestui cont a fost restricționat de Administrator.'}</div>
+                  <button
+                    type="button"
+                    onClick={handleCloudLogout}
+                    className="w-full py-2 rounded-lg bg-slate-900 border border-slate-600 text-xs font-black text-white"
+                  >
+                    Înapoi la Autentificare
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 rounded-xl border border-cyan-800/70">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('login'); setAuthErrorMsg(''); }}
+                      className={`py-1.5 rounded-lg text-xs font-black transition ${
+                        authMode === 'login'
+                          ? 'bg-cyan-900/90 text-white border border-cyan-400'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      🔑 Autentificare
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('register'); setAuthErrorMsg(''); }}
+                      className={`py-1.5 rounded-lg text-xs font-black transition ${
+                        authMode === 'register'
+                          ? 'bg-emerald-900/90 text-emerald-100 border border-emerald-400'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      🚀 Cont Nou
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAuthSubmit} className="space-y-2.5">
+                    {authMode === 'register' && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-cyan-300 uppercase">Nume Pilot în Joc</label>
+                        <input
+                          type="text"
+                          value={authPilotNameInput}
+                          onChange={e => setAuthPilotNameInput(e.target.value)}
+                          maxLength={18}
+                          placeholder="Ex: SilvPas"
+                          className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-400"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-cyan-300 uppercase">Email</label>
+                      <input
+                        type="email"
+                        value={authEmailInput}
+                        onChange={e => setAuthEmailInput(e.target.value)}
+                        placeholder="pilot@exemplu.com"
+                        className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-cyan-300 uppercase">Parolă (minim 6 caractere)</label>
+                      <input
+                        type="password"
+                        value={authPasswordInput}
+                        onChange={e => setAuthPasswordInput(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {authErrorMsg && (
+                      <div className="bg-rose-950/90 border border-rose-400/80 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-rose-200">
+                        ⚠️ {authErrorMsg}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={authSubmitting}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 border border-cyan-300 text-xs font-black text-white uppercase tracking-wider shadow-lg active:scale-95 disabled:opacity-50"
+                    >
+                      {authSubmitting
+                        ? 'Se procesează...'
+                        : authMode === 'register'
+                        ? '🚀 Creează Cont & Intră în Joc'
+                        : '🔑 Intră în Cont'}
+                    </button>
+                  </form>
+
+                  {authMode === 'register' && (
+                    <div className="bg-slate-950/85 border border-emerald-500/40 rounded-xl p-2 text-[9.5px] text-emerald-200 leading-snug">
+                      💡 Dacă ai deja progres local salvat în browser (Credits, Astralite, Nave), acesta va fi transferat automat în noul tău cont online la înregistrare!
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      return (cur - baseline) >= t.count;
             },
             progressText: (st) => {
               const baseline = st.missionBaselineKills?.[t.npc] ?? 0;
@@ -1865,7 +1993,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.35',
+      version: '1.36',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2017,7 +2145,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.35',
+        version: '1.36',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -3387,6 +3515,14 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.36 • Supabase Cloud Server, Online Login/Register & Global Admin Control Center',
+        items: [
+          'Connected Orbital Conqueror directly to the live Supabase cloud backend with Email + Password Login and Registration.',
+          'Automatic cloud profile hydration and 8-second background progress sync across PC and mobile devices, plus automatic migration of existing local progress upon first registration.',
+          'Upgraded the Admin Command Center with live server player management (search all registered pilots, send CR/AST gifts, ban/unban accounts) and global server events (Gold Booty Event, 2x XP Server, and live Lobby announcements).'
+        ]
+      },
+      {
         title: 'v1.35 • Persistent Pilot Accounts, Automatic Update Migration & Cross-Device Backup Code',
         items: [
           'Replaced version-wiping storage keys with a permanent account save slot (silvpas_orbital_conqueror_account_v1) plus automatic migration so future GitHub updates preserve 100% of pilot progress.',
@@ -3687,6 +3823,15 @@ const { useState, useEffect, useRef, useMemo } = React;
       return sanitizeGameState(parsed);
     }
 
+    // ============================================================================
+    // SUPABASE CLOUD BACKEND CONFIGURATION (v1.36)
+    // ============================================================================
+    const SUPABASE_URL = 'https://bofotrtaofwkzkbdosqm.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_bSPao8D25GbgqBcNio90jQ_jZupkTJu';
+    const supabaseClient = (typeof window !== 'undefined' && window.supabase && window.supabase.createClient)
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
     function GameApp() {
       const [state, setState] = useState(() => {
         try {
@@ -3748,6 +3893,24 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [promoInput, setPromoInput] = useState('');
       const [accountImportInput, setAccountImportInput] = useState('');
       const [accountCodePreview, setAccountCodePreview] = useState('');
+      const [authSession, setAuthSession] = useState(null);
+      const [authProfile, setAuthProfile] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+      const [authEmailInput, setAuthEmailInput] = useState('');
+      const [authPasswordInput, setAuthPasswordInput] = useState('');
+      const [authPilotNameInput, setAuthPilotNameInput] = useState('SilvPas');
+      const [authErrorMsg, setAuthErrorMsg] = useState('');
+      const [authSubmitting, setAuthSubmitting] = useState(false);
+      const [cloudSyncStatus, setCloudSyncStatus] = useState('offline'); // 'offline' | 'syncing' | 'synced' | 'error'
+      const [globalEvents, setGlobalEvents] = useState({ gold_booty_active: false, double_xp_active: false, announcement: '' });
+      const [adminPlayersList, setAdminPlayersList] = useState([]);
+      const [adminPlayersLoading, setAdminPlayersLoading] = useState(false);
+      const [adminPlayerSearch, setAdminPlayerSearch] = useState('');
+      const [adminGiftCr, setAdminGiftCr] = useState('100000');
+      const [adminGiftAst, setAdminGiftAst] = useState('5000');
+      const [adminAnnouncementInput, setAdminAnnouncementInput] = useState('');
+      const cloudReadyToSaveRef = useRef(false);
       const [toast, setToast] = useState(null);
       const [shipDestroyed, setShipDestroyed] = useState(false);
       const [showGatesModal, setShowGatesModal] = useState(false);
@@ -3989,7 +4152,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         }));
       };
 
-      const isSundayEventActive = () => new Date().getDay() === 0 || Boolean(stateRef.current?.adminUnlocked && stateRef.current?.adminBootySundayActive);
+      const isSundayEventActive = () => new Date().getDay() === 0 || Boolean(globalEvents?.gold_booty_active) || Boolean(stateRef.current?.adminUnlocked && stateRef.current?.adminBootySundayActive);
 
       const openGreenBootyBox = (box, collectorLabel = 'Manual') => {
         if (!box) return;
@@ -4644,6 +4807,281 @@ const { useState, useEffect, useRef, useMemo } = React;
         }, 4000);
         return () => clearInterval(t);
       }, [state]);
+
+      const syncProfileToCloud = async (targetState, userIdOverride = null) => {
+        const uid = userIdOverride || authSession?.user?.id;
+        if (!supabaseClient || !uid) return;
+        try {
+          setCloudSyncStatus('syncing');
+          const clean = sanitizeGameState(targetState);
+          const payload = {
+            pilot_id: clean.pilotId,
+            pilot_name: clean.playerName || 'Pilot',
+            credits: Math.max(0, Math.floor(clean.credits || 0)),
+            uridium: Math.max(0, Math.floor(clean.uridium || 0)),
+            xenomit: Math.max(0, Math.floor(clean.xenomit || 0)),
+            xp: Math.max(0, Math.floor(clean.xp || 0)),
+            honor: Math.max(0, Math.floor(clean.honor || 0)),
+            active_ship_id: clean.activeShipId || 'bugger',
+            company_id: clean.companyId || null,
+            clan_tag: clean.clan?.tag || null,
+            save_data: clean,
+            updated_at: new Date().toISOString(),
+          };
+          const { error } = await supabaseClient
+            .from('profiles')
+            .update(payload)
+            .eq('id', uid);
+          if (error) {
+            setCloudSyncStatus('error');
+          } else {
+            setCloudSyncStatus('synced');
+          }
+        } catch (err) {
+          setCloudSyncStatus('error');
+        }
+      };
+
+      const loadOrCreateCloudProfile = async (sessionObj, preferredPilotName = null) => {
+        if (!supabaseClient || !sessionObj?.user) {
+          setAuthLoading(false);
+          return;
+        }
+        const uid = sessionObj.user.id;
+        try {
+          const { data: existing, error: fetchErr } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', uid)
+            .maybeSingle();
+
+          if (fetchErr) {
+            setAuthErrorMsg(fetchErr.message || 'Eroare la citirea profilului din server.');
+            setAuthLoading(false);
+            return;
+          }
+
+          if (existing) {
+            if (existing.is_banned) {
+              setAuthProfile(existing);
+              setAuthErrorMsg(`Cont suspendat: ${existing.ban_reason || 'Încălcare regulament server.'}`);
+              setAuthLoading(false);
+              return;
+            }
+            const isServerAdmin = existing.role === 'admin';
+            const merged = sanitizeGameState({
+              ...(existing.save_data && typeof existing.save_data === 'object' ? existing.save_data : {}),
+              pilotId: existing.pilot_id || stateRef.current.pilotId,
+              playerName: existing.pilot_name || stateRef.current.playerName,
+              credits: Number(existing.credits ?? stateRef.current.credits),
+              uridium: Number(existing.uridium ?? stateRef.current.uridium),
+              xenomit: Number(existing.xenomit ?? stateRef.current.xenomit),
+              xp: Number(existing.xp ?? stateRef.current.xp),
+              honor: Number(existing.honor ?? stateRef.current.honor),
+              activeShipId: existing.active_ship_id || stateRef.current.activeShipId,
+              companyId: existing.company_id ?? stateRef.current.companyId,
+              adminUnlocked: isServerAdmin,
+            });
+            setAuthProfile(existing);
+            setState(merged);
+            setNameInput(merged.playerName);
+            setShowCompanyModal(!merged.companyId);
+            cloudReadyToSaveRef.current = true;
+            setCloudSyncStatus('synced');
+          } else {
+            // First registration: migrate existing local save into the new cloud profile!
+            const baseLocal = sanitizeGameState(stateRef.current);
+            const cleanName = (preferredPilotName || baseLocal.playerName || sessionObj.user.email?.split('@')[0] || 'Pilot')
+              .trim()
+              .slice(0, 18) || 'Pilot';
+            const newPilotId = baseLocal.pilotId || ('OC-' + String(Math.floor(100000 + Math.random() * 900000)));
+            const initialCloudState = sanitizeGameState({
+              ...baseLocal,
+              pilotId: newPilotId,
+              playerName: cleanName,
+              adminUnlocked: false,
+            });
+            const insertRow = {
+              id: uid,
+              pilot_id: newPilotId,
+              pilot_name: cleanName,
+              role: 'player',
+              is_banned: false,
+              credits: Math.max(0, Math.floor(initialCloudState.credits || 35000)),
+              uridium: Math.max(0, Math.floor(initialCloudState.uridium || 2000)),
+              xenomit: Math.max(0, Math.floor(initialCloudState.xenomit || 0)),
+              xp: Math.max(0, Math.floor(initialCloudState.xp || 0)),
+              honor: Math.max(0, Math.floor(initialCloudState.honor || 0)),
+              active_ship_id: initialCloudState.activeShipId || 'bugger',
+              company_id: initialCloudState.companyId || null,
+              clan_tag: initialCloudState.clan?.tag || null,
+              save_data: initialCloudState,
+            };
+            const { data: created, error: insErr } = await supabaseClient
+              .from('profiles')
+              .insert(insertRow)
+              .select()
+              .single();
+            if (insErr) {
+              setAuthErrorMsg(insErr.message || 'Nu s-a putut crea profilul în baza de date.');
+              setAuthLoading(false);
+              return;
+            }
+            setAuthProfile(created);
+            setState(initialCloudState);
+            setNameInput(cleanName);
+            setShowCompanyModal(!initialCloudState.companyId);
+            cloudReadyToSaveRef.current = true;
+            setCloudSyncStatus('synced');
+          }
+
+          // Fetch global events from server
+          const { data: evData } = await supabaseClient
+            .from('global_events')
+            .select('*')
+            .eq('id', 1)
+            .maybeSingle();
+          if (evData) {
+            setGlobalEvents(evData);
+            setAdminAnnouncementInput(evData.announcement || '');
+          }
+        } catch (err) {
+          setAuthErrorMsg(err?.message || 'Eroare de conexiune la Supabase.');
+        } finally {
+          setAuthLoading(false);
+        }
+      };
+
+      // Boot Supabase Session Listener
+      useEffect(() => {
+        if (!supabaseClient) {
+          setAuthLoading(false);
+          return;
+        }
+        let mounted = true;
+        supabaseClient.auth.getSession().then(({ data }) => {
+          if (!mounted) return;
+          const sess = data?.session || null;
+          setAuthSession(sess);
+          if (sess) {
+            loadOrCreateCloudProfile(sess);
+          } else {
+            setAuthLoading(false);
+          }
+        });
+        const { data: authListener } = supabaseClient.auth.onAuthStateChange((_event, sess) => {
+          if (!mounted) return;
+          setAuthSession(sess);
+          if (sess) {
+            setAuthLoading(true);
+            loadOrCreateCloudProfile(sess);
+          } else {
+            cloudReadyToSaveRef.current = false;
+            setAuthProfile(null);
+            setCloudSyncStatus('offline');
+            setAuthLoading(false);
+          }
+        });
+        return () => {
+          mounted = false;
+          authListener?.subscription?.unsubscribe();
+        };
+      }, []);
+
+      // Periodic Cloud Auto-Save (every 8 seconds when logged in) + Global Events Sync
+      useEffect(() => {
+        if (!supabaseClient || !authSession?.user?.id) return;
+        const syncIv = setInterval(async () => {
+          if (cloudReadyToSaveRef.current) {
+            await syncProfileToCloud(stateRef.current, authSession.user.id);
+          }
+          const { data: evData } = await supabaseClient
+            .from('global_events')
+            .select('*')
+            .eq('id', 1)
+            .maybeSingle();
+          if (evData) setGlobalEvents(evData);
+        }, 8000);
+        return () => clearInterval(syncIv);
+      }, [authSession?.user?.id]);
+
+      const fetchAllPlayersForAdmin = async () => {
+        if (!supabaseClient || !state.adminUnlocked) return;
+        setAdminPlayersLoading(true);
+        try {
+          const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('id, pilot_id, pilot_name, role, is_banned, ban_reason, credits, uridium, xenomit, xp, honor, active_ship_id, company_id, clan_tag, updated_at')
+            .order('xp', { ascending: false })
+            .limit(100);
+          if (!error && Array.isArray(data)) {
+            setAdminPlayersList(data);
+          }
+        } catch (err) {}
+        setAdminPlayersLoading(false);
+      };
+
+      useEffect(() => {
+        if (showAdminModal && state.adminUnlocked) {
+          fetchAllPlayersForAdmin();
+        }
+      }, [showAdminModal, state.adminUnlocked]);
+
+      const handleAuthSubmit = async (e) => {
+        if (e) e.preventDefault();
+        if (!supabaseClient) return setAuthErrorMsg('SDK Supabase neîncărcat. Reîncarcă pagina.');
+        const email = authEmailInput.trim();
+        const password = authPasswordInput;
+        if (!email || !password) return setAuthErrorMsg('Introdu adresa de email și parola.');
+        if (password.length < 6) return setAuthErrorMsg('Parola trebuie să aibă minim 6 caractere.');
+        setAuthErrorMsg('');
+        setAuthSubmitting(true);
+        try {
+          if (authMode === 'register') {
+            const pName = authPilotNameInput.trim().slice(0, 18);
+            if (pName.length < 2) {
+              setAuthSubmitting(false);
+              return setAuthErrorMsg('Numele de pilot trebuie să aibă minim 2 caractere.');
+            }
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+              setAuthErrorMsg(error.message);
+            } else if (data?.session) {
+              setAuthSession(data.session);
+              await loadOrCreateCloudProfile(data.session, pName);
+              notify(`✅ Cont creat și conectat la server: ${pName}!`);
+            } else {
+              setAuthErrorMsg('Cont creat! Verifică emailul sau dezactivează „Confirm email” în Supabase.');
+            }
+          } else {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+              setAuthErrorMsg(error.message);
+            } else if (data?.session) {
+              setAuthSession(data.session);
+              await loadOrCreateCloudProfile(data.session);
+              notify('✅ Conectat la serverul Orbital Conqueror!');
+            }
+          }
+        } catch (err) {
+          setAuthErrorMsg(err?.message || 'Eroare la autentificare.');
+        } finally {
+          setAuthSubmitting(false);
+        }
+      };
+
+      const handleCloudLogout = async () => {
+        if (supabaseClient && authSession?.user?.id && cloudReadyToSaveRef.current) {
+          await syncProfileToCloud(stateRef.current, authSession.user.id);
+        }
+        cloudReadyToSaveRef.current = false;
+        if (supabaseClient) await supabaseClient.auth.signOut();
+        setAuthSession(null);
+        setAuthProfile(null);
+        setShowSettingsModal(false);
+        setShowAdminModal(false);
+        notify('🔒 Deconectat de pe server.');
+      };
 
       if (combatRef.current.playerHp === null) combatRef.current.playerHp = stats.maxHp;
       if (combatRef.current.playerShield === null) combatRef.current.playerShield = stats.maxShield;
@@ -13286,6 +13724,205 @@ const { useState, useEffect, useRef, useMemo } = React;
                       </button>
                     </div>
 
+                    {/* BLOCK 0: SERVER PLAYERS & GLOBAL EVENTS (SUPABASE ADMIN) */}
+                    <div className="bg-gradient-to-br from-cyan-950/60 via-slate-900/95 to-slate-950 p-3 rounded-xl border border-cyan-400/70 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10.5px] font-black text-cyan-300 uppercase tracking-wide">🌐 Server Control • Toți Piloții ({adminPlayersList.length})</span>
+                        <button
+                          type="button"
+                          onClick={fetchAllPlayersForAdmin}
+                          className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-400 text-[9px] font-black text-cyan-200 active:scale-95"
+                        >
+                          {adminPlayersLoading ? '↻ ...' : '↻ Refresh'}
+                        </button>
+                      </div>
+
+                      {/* Global Server Events Toggle */}
+                      <div className="bg-slate-950/85 border border-slate-800 rounded-lg p-2 space-y-1.5">
+                        <div className="text-[9px] font-black text-amber-300 uppercase">⚡ Evenimente Globale Live pe Server</div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!supabaseClient) return;
+                              const nextVal = !globalEvents.gold_booty_active;
+                              const { data } = await supabaseClient
+                                .from('global_events')
+                                .update({ gold_booty_active: nextVal, updated_at: new Date().toISOString() })
+                                .eq('id', 1)
+                                .select()
+                                .single();
+                              if (data) setGlobalEvents(data);
+                              notify(nextVal ? '👑 Gold Booty Event ACTIVAT pentru toți jucătorii!' : 'Gold Booty Event dezactivat.');
+                            }}
+                            className={`py-1 px-2 rounded border text-[9px] font-black ${
+                              globalEvents.gold_booty_active
+                                ? 'bg-amber-500/25 border-amber-300 text-amber-200'
+                                : 'bg-slate-900 border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            👑 Gold Booty: {globalEvents.gold_booty_active ? 'ON' : 'OFF'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!supabaseClient) return;
+                              const nextVal = !globalEvents.double_xp_active;
+                              const { data } = await supabaseClient
+                                .from('global_events')
+                                .update({ double_xp_active: nextVal, updated_at: new Date().toISOString() })
+                                .eq('id', 1)
+                                .select()
+                                .single();
+                              if (data) setGlobalEvents(data);
+                              notify(nextVal ? '⭐ 2x XP Global ACTIVAT pe server!' : '2x XP Global dezactivat.');
+                            }}
+                            className={`py-1 px-2 rounded border text-[9px] font-black ${
+                              globalEvents.double_xp_active
+                                ? 'bg-purple-500/25 border-purple-300 text-purple-200'
+                                : 'bg-slate-900 border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            ⭐ 2x XP Server: {globalEvents.double_xp_active ? 'ON' : 'OFF'}
+                          </button>
+                        </div>
+                        <div className="flex gap-1">
+                          <input
+                            value={adminAnnouncementInput}
+                            onChange={e => setAdminAnnouncementInput(e.target.value)}
+                            placeholder="Anunț global pe server (apare tuturor în Lobby)..."
+                            className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[9.5px] text-white outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!supabaseClient) return;
+                              const { data } = await supabaseClient
+                                .from('global_events')
+                                .update({ announcement: adminAnnouncementInput.trim(), updated_at: new Date().toISOString() })
+                                .eq('id', 1)
+                                .select()
+                                .single();
+                              if (data) setGlobalEvents(data);
+                              notify('📢 Anunț global actualizat pe server!');
+                            }}
+                            className="px-2.5 py-1 rounded bg-emerald-950 border border-emerald-400 text-[9px] font-black text-emerald-200"
+                          >
+                            Trimite
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Gift Amount Presets & Search */}
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          value={adminPlayerSearch}
+                          onChange={e => setAdminPlayerSearch(e.target.value)}
+                          placeholder="Caută pilot după nume sau #OC-..."
+                          className="flex-1 bg-slate-950 border border-cyan-700/70 rounded-lg px-2 py-1 text-[10px] text-white outline-none"
+                        />
+                        <input
+                          value={adminGiftCr}
+                          onChange={e => setAdminGiftCr(e.target.value.replace(/[^0-9]/g, ''))}
+                          title="Credits de trimis"
+                          className="w-16 bg-slate-950 border border-amber-500/50 rounded-lg px-1.5 py-1 text-[9.5px] font-mono text-amber-300 outline-none"
+                        />
+                        <input
+                          value={adminGiftAst}
+                          onChange={e => setAdminGiftAst(e.target.value.replace(/[^0-9]/g, ''))}
+                          title="Astralite de trimis"
+                          className="w-14 bg-slate-950 border border-cyan-500/50 rounded-lg px-1.5 py-1 text-[9.5px] font-mono text-cyan-300 outline-none"
+                        />
+                      </div>
+
+                      {/* Registered Players List */}
+                      <div className="max-h-48 overflow-y-auto space-y-1.5 pr-0.5">
+                        {adminPlayersList
+                          .filter(pl => {
+                            const q = adminPlayerSearch.trim().toLowerCase();
+                            if (!q) return true;
+                            return (pl.pilot_name || '').toLowerCase().includes(q) || (pl.pilot_id || '').toLowerCase().includes(q);
+                          })
+                          .map(pl => {
+                            const isSelf = pl.id === authSession?.user?.id;
+                            return (
+                              <div key={pl.id} className="bg-slate-950/90 border border-slate-800 rounded-lg p-2 space-y-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] font-black text-white truncate">{pl.pilot_name}</span>
+                                      <span className="text-[8.5px] font-mono text-cyan-400">{pl.pilot_id}</span>
+                                      {pl.role === 'admin' && (
+                                        <span className="px-1 rounded bg-amber-500/20 border border-amber-400 text-[7.5px] font-black text-amber-300">ADMIN</span>
+                                      )}
+                                      {pl.is_banned && (
+                                        <span className="px-1 rounded bg-rose-500/20 border border-rose-400 text-[7.5px] font-black text-rose-300">BANNED</span>
+                                      )}
+                                    </div>
+                                    <div className="text-[8.5px] font-mono text-slate-400">
+                                      {fmt(pl.credits)} CR • {fmt(pl.uridium)} AST • Lv.{getLevelFromXp(pl.xp || 0).level}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        if (!supabaseClient) return;
+                                        const addCr = Math.max(0, parseInt(adminGiftCr || '0', 10));
+                                        const addAst = Math.max(0, parseInt(adminGiftAst || '0', 10));
+                                        const nextCr = Number(pl.credits || 0) + addCr;
+                                        const nextAst = Number(pl.uridium || 0) + addAst;
+                                        const { error } = await supabaseClient
+                                          .from('profiles')
+                                          .update({ credits: nextCr, uridium: nextAst })
+                                          .eq('id', pl.id);
+                                        if (!error) {
+                                          if (isSelf) {
+                                            setState(p => ({ ...p, credits: p.credits + addCr, uridium: p.uridium + addAst }));
+                                          }
+                                          notify(`🎁 Trimis +${fmt(addCr)} CR & +${fmt(addAst)} AST către ${pl.pilot_name}!`);
+                                          fetchAllPlayersForAdmin();
+                                        }
+                                      }}
+                                      className="px-1.5 py-1 rounded bg-emerald-950 border border-emerald-400 text-[8.5px] font-black text-emerald-200 active:scale-95"
+                                    >
+                                      +Gift
+                                    </button>
+                                    {!isSelf && (
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          if (!supabaseClient) return;
+                                          const nextBan = !pl.is_banned;
+                                          const { error } = await supabaseClient
+                                            .from('profiles')
+                                            .update({
+                                              is_banned: nextBan,
+                                              ban_reason: nextBan ? 'Suspendat de Administrator' : null
+                                            })
+                                            .eq('id', pl.id);
+                                          if (!error) {
+                                            notify(nextBan ? `⛔ Contul ${pl.pilot_name} a fost blocat!` : `✅ Contul ${pl.pilot_name} a fost deblocat!`);
+                                            fetchAllPlayersForAdmin();
+                                          }
+                                        }}
+                                        className={`px-1.5 py-1 rounded border text-[8.5px] font-black active:scale-95 ${
+                                          pl.is_banned
+                                            ? 'bg-sky-950 border-sky-400 text-sky-200'
+                                            : 'bg-rose-950 border-rose-400 text-rose-200'
+                                        }`}
+                                      >
+                                        {pl.is_banned ? 'Unban' : 'Ban'}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+
                     {/* BLOCK 1: Activare Admin — Activate in top-right; Left: 3D Ship; Right: Frameless Rank + Line + SilvPas Ship & Specs */}
                     <div className="bg-gradient-to-br from-amber-950/50 via-slate-900/95 to-slate-950 p-3 rounded-xl border border-amber-400/75 space-y-2.5">
                       <div className="flex items-center justify-between gap-1.5">
@@ -14758,7 +15395,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.35 (Persistent Accounts)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.36 (Supabase Cloud Server)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
@@ -14794,6 +15431,46 @@ const { useState, useEffect, useRef, useMemo } = React;
                         className="bg-cyan-900 border border-cyan-400 px-3 py-1.5 rounded-lg text-xs font-black text-amber-300 active:scale-95"
                       >
                         Salvează
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cloud Server Account Status & Logout */}
+                  <div className="bg-slate-900/95 p-3 rounded-xl border border-cyan-500/70 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-black text-cyan-300 uppercase">☁️ Cont Online Supabase</div>
+                        <div className="text-[10px] text-slate-300 font-mono truncate max-w-[210px]">
+                          {authSession?.user?.email || 'Neconectat'}
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black border ${
+                        cloudSyncStatus === 'synced'
+                          ? 'bg-emerald-950/90 border-emerald-400 text-emerald-200'
+                          : cloudSyncStatus === 'syncing'
+                          ? 'bg-amber-950/90 border-amber-400 text-amber-200'
+                          : 'bg-rose-950/90 border-rose-400 text-rose-200'
+                      }`}>
+                        {cloudSyncStatus === 'synced' ? '● SINCRONIZAT' : cloudSyncStatus === 'syncing' ? '↻ SE SALVEAZĂ...' : '● OFFLINE'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await syncProfileToCloud(state);
+                          notify('☁️ Progres salvat imediat pe server!');
+                        }}
+                        className="py-1.5 px-2.5 rounded-lg bg-cyan-950 border border-cyan-400 text-[10.5px] font-black text-cyan-200 active:scale-95"
+                      >
+                        ☁️ Salvează Acum
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCloudLogout}
+                        className="py-1.5 px-2.5 rounded-lg bg-rose-950 border border-rose-400 text-[10.5px] font-black text-rose-200 active:scale-95"
+                      >
+                        🚪 Deconectare
                       </button>
                     </div>
                   </div>
@@ -14932,17 +15609,8 @@ const { useState, useEffect, useRef, useMemo } = React;
                           const raw = promoInput.trim();
                           const c = raw.toUpperCase();
                           if (c === '941223') {
-                            if (state.adminUnlocked) {
-                              setPromoInput('');
-                              return notify('Panoul Administrator este deja activat!');
-                            }
-                            setState(p => ({
-                              ...p,
-                              adminUnlocked: true,
-                              redeemedCodes: p.redeemedCodes.includes(c) ? p.redeemedCodes : [...p.redeemedCodes, c]
-                            }));
                             setPromoInput('');
-                            return notify('🛡️ Admin Panel activat în Lobby!');
+                            return notify('🛡️ Rolul de Administrator se acordă exclusiv din baza de date Supabase (profiles.role = admin).');
                           }
                           if (state.redeemedCodes.includes(c)) return notify('Cod deja folosit!');
                           if (c === 'SILVPAS' || c === 'SHADOW106' || c === 'SHADOW107') {
@@ -15078,6 +15746,12 @@ const { useState, useEffect, useRef, useMemo } = React;
                 <div className="min-h-full flex flex-col justify-between gap-2 py-0.5">
                   {/* TOP SECTION: Glassmorphic Pilot Identity Card + News / Admin / Hall of Fame */}
                   <div className="space-y-1.5">
+                    {globalEvents?.announcement && (
+                      <div className="rounded-xl bg-amber-950/85 border border-amber-400/70 px-2.5 py-1.5 flex items-center gap-2 shadow-[0_0_14px_rgba(250,204,21,0.22)]">
+                        <span className="text-xs">📢</span>
+                        <span className="text-[10px] font-bold text-amber-100 leading-tight">{globalEvents.announcement}</span>
+                      </div>
+                    )}
                     <div className="rounded-2xl bg-slate-950/65 backdrop-blur-md border border-cyan-400/25 p-2 shadow-[0_6px_22px_rgba(2,8,23,0.75)]">
                       <div className="flex items-center justify-between gap-2">
                         <button
