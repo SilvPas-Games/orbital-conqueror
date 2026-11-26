@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.38 (Server Maintenance & Drone Evolution)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.38.2 (Live Space Announcements & Maintenance Alert)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -135,37 +135,37 @@ const { useState, useEffect, useRef, useMemo } = React;
     };
 
     const DRONE_SPRITES_3D = {
-      flax: './assets/drones/vesper_lvl1.png',
-      iris: './assets/drones/orion_lvl1.png',
-      apis: './assets/drones/helios_lvl1.png',
-      zeus: './assets/drones/aether_lvl1.png',
-      vesper_lvl1: './assets/drones/vesper_lvl1.png',
-      vesper_lvl2: './assets/drones/vesper_lvl2.png',
-      vesper_lvl3: './assets/drones/vesper_lvl3.png',
-      vesper_lvl4: './assets/drones/vesper_lvl4.png',
-      vesper_lvl5: './assets/drones/vesper_lvl5.png',
-      vesper_lvl6: './assets/drones/vesper_lvl6.png',
-      orion_lvl1: './assets/drones/orion_lvl1.png',
-      orion_lvl2: './assets/drones/orion_lvl2.png',
-      orion_lvl3: './assets/drones/orion_lvl3.png',
-      orion_lvl4: './assets/drones/orion_lvl4.png',
-      orion_lvl5: './assets/drones/orion_lvl5.png',
-      orion_lvl6: './assets/drones/orion_lvl6.png',
-      helios_lvl1: './assets/drones/helios_lvl1.png',
-      helios_lvl2: './assets/drones/helios_lvl2.png',
-      helios_lvl3: './assets/drones/helios_lvl3.png',
-      helios_lvl4: './assets/drones/helios_lvl4.png',
-      helios_lvl5: './assets/drones/helios_lvl5.png',
-      helios_lvl6: './assets/drones/helios_lvl6.png',
-      aether_lvl1: './assets/drones/aether_lvl1.png',
-      aether_lvl2: './assets/drones/aether_lvl2.png',
-      aether_lvl3: './assets/drones/aether_lvl3.png',
-      aether_lvl4: './assets/drones/aether_lvl4.png',
-      aether_lvl5: './assets/drones/aether_lvl5.png',
-      aether_lvl6: './assets/drones/aether_lvl6.png',
-      cov_havoc: './assets/drones/cov_havoc.png',
-      cov_hercules: './assets/drones/cov_hercules.png',
-      cov_spartan: './assets/drones/cov_spartan.png',
+      flax: './assets/drones/vesper_lvl1.png?v=1.38.1',
+      iris: './assets/drones/orion_lvl1.png?v=1.38.1',
+      apis: './assets/drones/helios_lvl1.png?v=1.38.1',
+      zeus: './assets/drones/aether_lvl1.png?v=1.38.1',
+      vesper_lvl1: './assets/drones/vesper_lvl1.png?v=1.38.1',
+      vesper_lvl2: './assets/drones/vesper_lvl2.png?v=1.38.1',
+      vesper_lvl3: './assets/drones/vesper_lvl3.png?v=1.38.1',
+      vesper_lvl4: './assets/drones/vesper_lvl4.png?v=1.38.1',
+      vesper_lvl5: './assets/drones/vesper_lvl5.png?v=1.38.1',
+      vesper_lvl6: './assets/drones/vesper_lvl6.png?v=1.38.1',
+      orion_lvl1: './assets/drones/orion_lvl1.png?v=1.38.1',
+      orion_lvl2: './assets/drones/orion_lvl2.png?v=1.38.1',
+      orion_lvl3: './assets/drones/orion_lvl3.png?v=1.38.1',
+      orion_lvl4: './assets/drones/orion_lvl4.png?v=1.38.1',
+      orion_lvl5: './assets/drones/orion_lvl5.png?v=1.38.1',
+      orion_lvl6: './assets/drones/orion_lvl6.png?v=1.38.1',
+      helios_lvl1: './assets/drones/helios_lvl1.png?v=1.38.1',
+      helios_lvl2: './assets/drones/helios_lvl2.png?v=1.38.1',
+      helios_lvl3: './assets/drones/helios_lvl3.png?v=1.38.1',
+      helios_lvl4: './assets/drones/helios_lvl4.png?v=1.38.1',
+      helios_lvl5: './assets/drones/helios_lvl5.png?v=1.38.1',
+      helios_lvl6: './assets/drones/helios_lvl6.png?v=1.38.1',
+      aether_lvl1: './assets/drones/aether_lvl1.png?v=1.38.1',
+      aether_lvl2: './assets/drones/aether_lvl2.png?v=1.38.1',
+      aether_lvl3: './assets/drones/aether_lvl3.png?v=1.38.1',
+      aether_lvl4: './assets/drones/aether_lvl4.png?v=1.38.1',
+      aether_lvl5: './assets/drones/aether_lvl5.png?v=1.38.1',
+      aether_lvl6: './assets/drones/aether_lvl6.png?v=1.38.1',
+      cov_havoc: './assets/drones/cov_havoc.png?v=1.38.1',
+      cov_hercules: './assets/drones/cov_hercules.png?v=1.38.1',
+      cov_spartan: './assets/drones/cov_spartan.png?v=1.38.1',
     };
 
     const DRONE_LEVEL_THRESHOLDS = [0, 15000, 55000, 160000, 420000, 1000000];
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.38',
+      version: '1.38.2',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.38',
+        version: '1.38.2',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -2908,26 +2908,35 @@ const { useState, useEffect, useRef, useMemo } = React;
       useEffect(() => { setImgFailed(false); }, [spriteKey]);
 
       if (!spriteSrc || imgFailed) {
+        const isCover = Boolean(coverId);
+        const hullPrimary =
+          coverId === 'cov_havoc' ? '#ef4444' :
+          coverId === 'cov_hercules' ? '#38bdf8' :
+          coverId === 'cov_spartan' ? '#facc15' :
+          droneType === 'zeus' ? '#991b1b' :
+          droneType === 'apis' ? '#1e3a8a' :
+          droneType === 'iris' ? '#64748b' : '#cbd5e1';
+        const eyeCol =
+          coverId === 'cov_hercules' || droneType === 'apis' || droneType === 'flax' ? '#38bdf8' :
+          coverId === 'cov_spartan' ? '#fde047' : '#f43f5e';
         return (
-          <svg width={size} height={size} viewBox="-6 -6 12 12" className="shrink-0 drop-shadow-[0_1px_3px_rgba(2,6,23,0.75)]">
-            <polygon
-              points="0,-5.2 -4.6,4.0 0,1.9 4.6,4.0"
-              fill={color}
-            />
-            <polygon
-              points="0,-5.2 0,1.9 4.6,4.0"
-              fill="#020617"
-              fillOpacity="0.28"
-            />
+          <svg width={size} height={size} viewBox="-12 -12 24 24" className="shrink-0 drop-shadow-[0_2px_4px_rgba(2,6,23,0.9)]">
+            {isCover && (
+              <path d="M-8,-6 C-11,-1 -11,4 -6,8 M8,-6 C11,-1 11,4 6,8" fill="none" stroke={hullPrimary} strokeWidth="2.2" strokeLinecap="round" />
+            )}
+            <polygon points="0,-10 -8.5,7.5 0,4.2 8.5,7.5" fill={hullPrimary} stroke="#e2e8f0" strokeWidth="0.7" strokeLinejoin="round" />
+            <polygon points="0,-10 0,4.2 8.5,7.5" fill="#020617" fillOpacity="0.32" />
+            <circle cx="-2.4" cy="-3.5" r="1.25" fill={eyeCol} />
+            <circle cx="2.4" cy="-3.5" r="1.25" fill={eyeCol} />
           </svg>
         );
       }
 
       const coverGlow =
-        coverId === 'cov_havoc' ? 'drop-shadow(0 0 4px rgba(239,68,68,0.85))' :
-        coverId === 'cov_hercules' ? 'drop-shadow(0 0 4px rgba(56,189,248,0.85))' :
-        coverId === 'cov_spartan' ? 'drop-shadow(0 0 4px rgba(250,204,21,0.9))' :
-        'drop-shadow(0 1px 3px rgba(2,6,23,0.85))';
+        coverId === 'cov_havoc' ? 'drop-shadow(0 0 6px rgba(239,68,68,0.95)) brightness(1.12)' :
+        coverId === 'cov_hercules' ? 'drop-shadow(0 0 6px rgba(56,189,248,0.95)) brightness(1.12)' :
+        coverId === 'cov_spartan' ? 'drop-shadow(0 0 6px rgba(250,204,21,0.95)) brightness(1.12)' :
+        'drop-shadow(0 2px 5px rgba(2,6,23,0.92)) brightness(1.14) contrast(1.08)';
 
       return (
         <div
@@ -2936,7 +2945,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         >
           <img
             src={spriteSrc}
-            alt={droneType}
+            alt={droneType || coverId || 'drone'}
             draggable={false}
             onError={() => setImgFailed(true)}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
@@ -3857,6 +3866,8 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [adminGiftAst, setAdminGiftAst] = useState('5000');
       const [adminAnnouncementInput, setAdminAnnouncementInput] = useState('');
       const [adminMaintMsgInput, setAdminMaintMsgInput] = useState('Server is currently under maintenance for a new update. We will be back online shortly!');
+      const [dismissedAnnouncementText, setDismissedAnnouncementText] = useState('');
+      const [spaceAnnouncementVisibleUntil, setSpaceAnnouncementVisibleUntil] = useState(0);
       const cloudReadyToSaveRef = useRef(false);
       const [toast, setToast] = useState(null);
       const [shipDestroyed, setShipDestroyed] = useState(false);
@@ -4907,6 +4918,9 @@ const { useState, useEffect, useRef, useMemo } = React;
             setGlobalEvents(evData);
             setAdminAnnouncementInput(evData.announcement || '');
             if (evData.maintenance_message) setAdminMaintMsgInput(evData.maintenance_message);
+            if ((evData.announcement || '').trim()) {
+              setSpaceAnnouncementVisibleUntil(Date.now() + 15000);
+            }
           }
         } catch (err) {
           setAuthErrorMsg(err?.message || 'Eroare de conexiune la Supabase.');
@@ -4960,7 +4974,17 @@ const { useState, useEffect, useRef, useMemo } = React;
             .select('*')
             .eq('id', 1)
             .maybeSingle();
-          if (evData) setGlobalEvents(evData);
+          if (evData) {
+            setGlobalEvents(prev => {
+              const nextAnn = (evData.announcement || '').trim();
+              const prevAnn = (prev?.announcement || '').trim();
+              if (nextAnn && nextAnn !== prevAnn) {
+                setDismissedAnnouncementText('');
+                setSpaceAnnouncementVisibleUntil(Date.now() + 15000);
+              }
+              return evData;
+            });
+          }
         };
         pollEvents();
         const syncIv = setInterval(async () => {
@@ -13944,8 +13968,14 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 .eq('id', 1)
                                 .select()
                                 .single();
-                              if (data) setGlobalEvents(data);
-                              notify('📢 Anunț global actualizat pe server!');
+                              if (data) {
+                                setGlobalEvents(data);
+                                if ((data.announcement || '').trim()) {
+                                  setDismissedAnnouncementText('');
+                                  setSpaceAnnouncementVisibleUntil(Date.now() + 15000);
+                                }
+                              }
+                              notify('📢 Server announcement broadcast to Lobby & Space!');
                             }}
                             className="px-2.5 py-1 rounded bg-emerald-950 border border-emerald-400 text-[9px] font-black text-emerald-200"
                           >
@@ -15653,7 +15683,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.38 (Server Maintenance & Drone Evolution)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.38.2 (Live Space Announcements & Maintenance Alert)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
@@ -16447,7 +16477,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 }}
                                 className="absolute z-20 transition-transform duration-300"
                               >
-                                <DronesSVG color={dCol} size={22} droneType={dSlot.type} droneLvl={getDroneLevelInfo(dSlot.xp || 0).lvl} coverId={dCfgSlot.cover || null} />
+                                <DronesSVG color={dCol} size={28} droneType={dSlot.type} droneLvl={getDroneLevelInfo(dSlot.xp || 0).lvl} coverId={dCfgSlot.cover || null} />
                               </div>
                             );
                           })}
@@ -16535,6 +16565,55 @@ const { useState, useEffect, useRef, useMemo } = React;
                         )}
                       </div>
                     )}
+
+                    {/* LIVE SERVER ANNOUNCEMENT & MAINTENANCE ALERT IN SPACE HUD */}
+                    {(() => {
+                      const annText = (globalEvents?.announcement || '').trim();
+                      const showSpaceAnn = Boolean(annText && annText !== dismissedAnnouncementText && Date.now() < spaceAnnouncementVisibleUntil);
+                      const showSpaceMaint = Boolean(globalEvents?.maintenance_active);
+                      if (!showSpaceAnn && !showSpaceMaint) return null;
+                      return (
+                        <div
+                          onPointerDown={(e) => e.stopPropagation()}
+                          className="absolute top-9 left-1/2 -translate-x-1/2 z-30 w-[235px] max-w-[62%] flex flex-col gap-1 pointer-events-auto"
+                        >
+                          {showSpaceMaint && (
+                            <div className="rounded-lg bg-rose-950/90 backdrop-blur-md border border-rose-400/85 px-2 py-1 flex items-center justify-between gap-1.5 shadow-[0_0_16px_rgba(244,63,94,0.35)]">
+                              <span className="text-[8.5px] font-black text-rose-100 leading-tight">
+                                🛠️ SERVER MAINTENANCE ACTIVE
+                              </span>
+                              {state.adminUnlocked && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAdminModal(true)}
+                                  className="px-1.5 py-0.5 rounded bg-rose-600 text-[7.5px] font-black text-white shrink-0"
+                                >
+                                  Admin
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {showSpaceAnn && (
+                            <div className="rounded-lg bg-amber-950/90 backdrop-blur-md border border-amber-400/80 px-2 py-1 flex items-start justify-between gap-1.5 shadow-[0_0_16px_rgba(250,204,21,0.3)]">
+                              <div className="flex items-start gap-1 min-w-0">
+                                <span className="text-[9.5px] shrink-0">📢</span>
+                                <span className="text-[8.5px] font-bold text-amber-100 leading-tight break-words">
+                                  {annText}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setDismissedAnnouncementText(annText)}
+                                className="text-[9px] font-black text-amber-300 hover:text-white px-1 shrink-0"
+                                title="Dismiss"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* ===================================================================== */}
                     {/* TOP-LEFT CORNER: VERTICAL COMMAND STACK (MAIN MENU -> DOWNWARD) + HUD */}
@@ -18872,18 +18951,53 @@ const { useState, useEffect, useRef, useMemo } = React;
                               </div>
 
 
-                              <div className="my-auto px-1 text-center">
-                                {previewItem ? (
-                                  <div className="space-y-0.5">
-                                    <div className="text-[11px] font-black text-slate-100">
-                                      {previewItem.name} <span className="text-amber-300 font-mono text-[9.5px]">({previewItem.stat})</span>
+                              {(() => {
+                                const selSlot = state.droneSlots?.[selectedDrones];
+                                const selCfg = selSlot?.configs?.[state.activeConfig] || createEmptyDronesLoadout();
+                                const selLvl = selSlot?.type ? getDroneLevelInfo(selSlot.xp || 0) : null;
+                                const activeCovPreview = previewItem?.id?.startsWith('cov_') ? previewItem.id : (selCfg.cover || null);
+                                return (
+                                  <div className="my-auto px-1.5 flex items-center gap-2.5 bg-slate-950/60 border border-cyan-500/20 rounded-xl py-1.5">
+                                    <div className="w-12 h-12 rounded-xl bg-slate-900/90 border border-cyan-400/25 flex items-center justify-center shrink-0">
+                                      {selSlot?.type ? (
+                                        <DronesSVG
+                                          color="#38bdf8"
+                                          size={42}
+                                          droneType={selSlot.type}
+                                          droneLvl={selLvl?.lvl || 1}
+                                          coverId={activeCovPreview}
+                                        />
+                                      ) : (
+                                        <span className="text-sm opacity-45">🔒</span>
+                                      )}
                                     </div>
-                                    <div className="text-[9px] text-slate-400">{previewItem.desc}</div>
+                                    <div className="min-w-0 flex-1 text-left">
+                                      {previewItem ? (
+                                        <div className="space-y-0.5">
+                                          <div className="text-[10.5px] font-black text-slate-100 truncate">
+                                            {previewItem.name} <span className="text-amber-300 font-mono text-[9px]">({previewItem.stat})</span>
+                                          </div>
+                                          <div className="text-[8.5px] text-slate-400 line-clamp-2 leading-tight">{previewItem.desc}</div>
+                                        </div>
+                                      ) : selSlot?.type ? (
+                                        <div className="space-y-0.5">
+                                          <div className="text-[10.5px] font-black text-cyan-200">
+                                            {getDroneDisplayName(selSlot.type)} • <span className="text-amber-300">Lv.{selLvl.lvl}/6</span>
+                                          </div>
+                                          <div className="text-[8.5px] text-emerald-300 font-mono">
+                                            Bonus Nivel: +{selLvl.dmgBonusPct}% DMG • +{selLvl.shdBonusPct}% SHD
+                                          </div>
+                                          <div className="text-[8px] text-slate-400">
+                                            XP: {fmt(selLvl.xp)} / {fmt(selLvl.nextReq)} • Select item above to equip
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-[9.5px] font-semibold text-slate-400">Slot #{selectedDrones + 1} Locked — Buy in Shop</div>
+                                      )}
+                                    </div>
                                   </div>
-                                ) : (
-                                  <div className="text-[10px] font-semibold text-slate-400">Choose any item</div>
-                                )}
-                              </div>
+                                );
+                              })()}
 
                               <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between gap-1">
                                 <span className="text-[8.5px] font-mono text-slate-400 truncate">
@@ -19317,7 +19431,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                               >
                                 <div className="flex items-center gap-1 min-w-0">
                                   {unlocked ? (
-                                    <DronesSVG color={droneIconColor} size={20} droneType={d.type} droneLvl={dLvlInfo.lvl} coverId={dCfg?.cover || null} />
+                                    <DronesSVG color={droneIconColor} size={28} droneType={d.type} droneLvl={dLvlInfo.lvl} coverId={dCfg?.cover || null} />
                                   ) : (
                                     <span className="text-[8.5px] shrink-0">🔒</span>
                                   )}
@@ -19433,8 +19547,8 @@ const { useState, useEffect, useRef, useMemo } = React;
                                     >
                                       {covObj ? (
                                         <>
-                                          <span style={{ backgroundColor: covObj.color }} className="w-1.5 h-1.5 rounded-full shrink-0" />
-                                          <span className="truncate">{covObj.name.replace(' Design', '')}</span>
+                                          <DronesSVG color={covObj.color} size={15} droneType={d.type} coverId={covObj.id} />
+                                          <span className="truncate">{covObj.name.replace(' Core', '')}</span>
                                         </>
                                       ) : (
                                         '+'
@@ -20100,21 +20214,21 @@ const { useState, useEffect, useRef, useMemo } = React;
                           <div key={entry.id} className="bg-slate-950/55 rounded-xl p-2 flex items-center justify-between gap-2.5">
                             {has3DPreview && (
                               <div
-                                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden"
+                                className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden border border-white/10"
                                 style={{
-                                  backgroundImage: `radial-gradient(circle at 30% 25%, ${entry.color}33, rgba(4, 14, 28, 0.92) 72%)`,
+                                  backgroundImage: `radial-gradient(circle at 35% 30%, ${entry.color}44, rgba(4, 14, 28, 0.96) 76%)`,
                                 }}
                               >
                                 {isShipEntry ? (
-                                  <ShipSVG shipId={entry.id} color={entry.color} size={40} />
+                                  <ShipSVG shipId={entry.id} color={entry.color} size={46} />
                                 ) : isShipDesignEntry ? (
-                                  <ShipSVG shipId={entry.shipId} color={entry.color} auraColor={entry.color} size={40} />
+                                  <ShipSVG shipId={entry.shipId} color={entry.color} auraColor={entry.color} size={46} />
                                 ) : isPetEntry ? (
-                                  <PetSVG size={40} active={true} level={15} />
+                                  <PetSVG size={46} active={true} level={15} />
                                 ) : isDroneFormationEntry ? (
-                                  <FormationIconSVG formationId={entry.formationId} color={entry.color} size={32} />
+                                  <FormationIconSVG formationId={entry.formationId} color={entry.color} size={36} />
                                 ) : (
-                                  <DronesSVG color={dronePreviewColor} size={42} droneType={isCoverEntry ? "iris" : (entry.type?.replace("drone_", "") || "flax")} droneLvl={6} coverId={isCoverEntry ? entry.id : null} />
+                                  <DronesSVG color={dronePreviewColor} size={50} droneType={isCoverEntry ? "iris" : (entry.type?.replace("drone_", "") || "flax")} droneLvl={6} coverId={isCoverEntry ? entry.id : null} />
                                 )}
                               </div>
                             )}
