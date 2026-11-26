@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.36 (Online Cloud Server)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.36.1 (Online Cloud Server)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -869,134 +869,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             check: (st) => {
               const baseline = st.missionBaselineKills?.[t.npc] ?? 0;
               const cur = st.npcKills?.[t.npc] || 0;
-              if (authLoading) {
-        return (
-          <div className="w-full h-[100dvh] bg-[#020813] text-slate-100 flex flex-col items-center justify-center p-4">
-            <div className="w-12 h-12 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-3" />
-            <div className="text-xs font-black tracking-widest uppercase text-cyan-300">Conectare la Serverul Orbital Conqueror...</div>
-            <div className="text-[10px] text-slate-400 mt-1">Sincronizare profil pilot & bază de date</div>
-          </div>
-        );
-      }
-
-      if (!authSession || authProfile?.is_banned) {
-        return (
-          <div className="w-full h-[100dvh] bg-[#020813] text-slate-100 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="w-full max-w-[390px] bg-gradient-to-b from-[#07182c] to-[#030b17] border-2 border-cyan-400/70 rounded-2xl p-4 space-y-3.5 shadow-[0_0_40px_rgba(34,211,238,0.22)]">
-              <div className="text-center space-y-1 border-b border-cyan-800/70 pb-3">
-                <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">SilvPas Idle Games • Online Server</div>
-                <div className="text-lg font-black text-white tracking-wide">ORBITAL CONQUEROR</div>
-                <div className="text-[10px] text-cyan-300">Conturi Persistente în Cloud • v1.36</div>
-              </div>
-
-              {authProfile?.is_banned ? (
-                <div className="bg-rose-950/90 border border-rose-400 rounded-xl p-3 text-center space-y-2">
-                  <div className="text-xs font-black text-rose-200 uppercase">⛔ Cont Suspendat</div>
-                  <div className="text-[10.5px] text-rose-100">{authProfile.ban_reason || 'Accesul acestui cont a fost restricționat de Administrator.'}</div>
-                  <button
-                    type="button"
-                    onClick={handleCloudLogout}
-                    className="w-full py-2 rounded-lg bg-slate-900 border border-slate-600 text-xs font-black text-white"
-                  >
-                    Înapoi la Autentificare
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 rounded-xl border border-cyan-800/70">
-                    <button
-                      type="button"
-                      onClick={() => { setAuthMode('login'); setAuthErrorMsg(''); }}
-                      className={`py-1.5 rounded-lg text-xs font-black transition ${
-                        authMode === 'login'
-                          ? 'bg-cyan-900/90 text-white border border-cyan-400'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      🔑 Autentificare
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setAuthMode('register'); setAuthErrorMsg(''); }}
-                      className={`py-1.5 rounded-lg text-xs font-black transition ${
-                        authMode === 'register'
-                          ? 'bg-emerald-900/90 text-emerald-100 border border-emerald-400'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      🚀 Cont Nou
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleAuthSubmit} className="space-y-2.5">
-                    {authMode === 'register' && (
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-cyan-300 uppercase">Nume Pilot în Joc</label>
-                        <input
-                          type="text"
-                          value={authPilotNameInput}
-                          onChange={e => setAuthPilotNameInput(e.target.value)}
-                          maxLength={18}
-                          placeholder="Ex: SilvPas"
-                          className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-400"
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-cyan-300 uppercase">Email</label>
-                      <input
-                        type="email"
-                        value={authEmailInput}
-                        onChange={e => setAuthEmailInput(e.target.value)}
-                        placeholder="pilot@exemplu.com"
-                        className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-cyan-300 uppercase">Parolă (minim 6 caractere)</label>
-                      <input
-                        type="password"
-                        value={authPasswordInput}
-                        onChange={e => setAuthPasswordInput(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
-                      />
-                    </div>
-
-                    {authErrorMsg && (
-                      <div className="bg-rose-950/90 border border-rose-400/80 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-rose-200">
-                        ⚠️ {authErrorMsg}
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={authSubmitting}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 border border-cyan-300 text-xs font-black text-white uppercase tracking-wider shadow-lg active:scale-95 disabled:opacity-50"
-                    >
-                      {authSubmitting
-                        ? 'Se procesează...'
-                        : authMode === 'register'
-                        ? '🚀 Creează Cont & Intră în Joc'
-                        : '🔑 Intră în Cont'}
-                    </button>
-                  </form>
-
-                  {authMode === 'register' && (
-                    <div className="bg-slate-950/85 border border-emerald-500/40 rounded-xl p-2 text-[9.5px] text-emerald-200 leading-snug">
-                      💡 Dacă ai deja progres local salvat în browser (Credits, Astralite, Nave), acesta va fi transferat automat în noul tău cont online la înregistrare!
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        );
-      }
-
-      return (cur - baseline) >= t.count;
+                      return (cur - baseline) >= t.count;
             },
             progressText: (st) => {
               const baseline = st.missionBaselineKills?.[t.npc] ?? 0;
@@ -12241,6 +12114,133 @@ const { useState, useEffect, useRef, useMemo } = React;
       const currentDronesObj = state.droneSlots[selectedDrones];
       const readyGatesCount = GALAXY_GATES_CONFIG.filter(g => (state.gates[g.id] || 0) >= g.partsNeeded && state.activatedGates?.[g.id]).length;
 
+      if (authLoading) {
+        return (
+          <div className="w-full h-[100dvh] bg-[#020813] text-slate-100 flex flex-col items-center justify-center p-4">
+            <div className="w-12 h-12 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-3" />
+            <div className="text-xs font-black tracking-widest uppercase text-cyan-300">Conectare la Serverul Orbital Conqueror...</div>
+            <div className="text-[10px] text-slate-400 mt-1">Sincronizare profil pilot & bază de date</div>
+          </div>
+        );
+      }
+
+      if (!authSession || authProfile?.is_banned) {
+        return (
+          <div className="w-full h-[100dvh] bg-[#020813] text-slate-100 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-[390px] bg-gradient-to-b from-[#07182c] to-[#030b17] border-2 border-cyan-400/70 rounded-2xl p-4 space-y-3.5 shadow-[0_0_40px_rgba(34,211,238,0.22)]">
+              <div className="text-center space-y-1 border-b border-cyan-800/70 pb-3">
+                <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">SilvPas Idle Games • Online Server</div>
+                <div className="text-lg font-black text-white tracking-wide">ORBITAL CONQUEROR</div>
+                <div className="text-[10px] text-cyan-300">Conturi Persistente în Cloud • v1.36</div>
+              </div>
+
+              {authProfile?.is_banned ? (
+                <div className="bg-rose-950/90 border border-rose-400 rounded-xl p-3 text-center space-y-2">
+                  <div className="text-xs font-black text-rose-200 uppercase">⛔ Cont Suspendat</div>
+                  <div className="text-[10.5px] text-rose-100">{authProfile.ban_reason || 'Accesul acestui cont a fost restricționat de Administrator.'}</div>
+                  <button
+                    type="button"
+                    onClick={handleCloudLogout}
+                    className="w-full py-2 rounded-lg bg-slate-900 border border-slate-600 text-xs font-black text-white"
+                  >
+                    Înapoi la Autentificare
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 rounded-xl border border-cyan-800/70">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('login'); setAuthErrorMsg(''); }}
+                      className={`py-1.5 rounded-lg text-xs font-black transition ${
+                        authMode === 'login'
+                          ? 'bg-cyan-900/90 text-white border border-cyan-400'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      🔑 Autentificare
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('register'); setAuthErrorMsg(''); }}
+                      className={`py-1.5 rounded-lg text-xs font-black transition ${
+                        authMode === 'register'
+                          ? 'bg-emerald-900/90 text-emerald-100 border border-emerald-400'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      🚀 Cont Nou
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAuthSubmit} className="space-y-2.5">
+                    {authMode === 'register' && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-cyan-300 uppercase">Nume Pilot în Joc</label>
+                        <input
+                          type="text"
+                          value={authPilotNameInput}
+                          onChange={e => setAuthPilotNameInput(e.target.value)}
+                          maxLength={18}
+                          placeholder="Ex: SilvPas"
+                          className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-400"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-cyan-300 uppercase">Email</label>
+                      <input
+                        type="email"
+                        value={authEmailInput}
+                        onChange={e => setAuthEmailInput(e.target.value)}
+                        placeholder="pilot@exemplu.com"
+                        className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-cyan-300 uppercase">Parolă (minim 6 caractere)</label>
+                      <input
+                        type="password"
+                        value={authPasswordInput}
+                        onChange={e => setAuthPasswordInput(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-slate-950 border border-cyan-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {authErrorMsg && (
+                      <div className="bg-rose-950/90 border border-rose-400/80 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-rose-200">
+                        ⚠️ {authErrorMsg}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={authSubmitting}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 border border-cyan-300 text-xs font-black text-white uppercase tracking-wider shadow-lg active:scale-95 disabled:opacity-50"
+                    >
+                      {authSubmitting
+                        ? 'Se procesează...'
+                        : authMode === 'register'
+                        ? '🚀 Creează Cont & Intră în Joc'
+                        : '🔑 Intră în Cont'}
+                    </button>
+                  </form>
+
+                  {authMode === 'register' && (
+                    <div className="bg-slate-950/85 border border-emerald-500/40 rounded-xl p-2 text-[9.5px] text-emerald-200 leading-snug">
+                      💡 Dacă ai deja progres local salvat în browser (Credits, Astralite, Nave), acesta va fi transferat automat în noul tău cont online la înregistrare!
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div translate="no" className="notranslate w-full h-[100dvh] bg-[#020813] flex justify-center overflow-hidden select-none text-slate-100">
           <div
@@ -15395,7 +15395,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.36 (Supabase Cloud Server)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.36.1 (Supabase Cloud Server)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
