@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.38.2 (Live Space Announcements & Maintenance Alert)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.39 (Live Space Multiplayer & Persistent Space Broadcasts)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.38.2',
+      version: '1.39',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.38.2',
+        version: '1.39',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -3454,6 +3454,13 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.39 • Live Space Multiplayer (Supabase Realtime) & Persistent Space Announcements',
+        items: [
+          'Connected Space sectors to Supabase Realtime Presence & Broadcast so pilots flying in the same sector see each other live in real time (warship sprite, drones, HP/Shield bars, pilot name, clan tag, company tag, and radar blip).',
+          'Made Server Announcements persistent in Space HUD until dismissed by the player or cleared by Admin.'
+        ]
+      },
+      {
         title: 'v1.38 • Server Maintenance Mode (English) & Admin Live Testing Access',
         items: [
           'Added global Server Maintenance Mode controlled from Admin Command Center (MAINTENANCE: ON / OFF + custom maintenance notice).',
@@ -3867,7 +3874,9 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [adminAnnouncementInput, setAdminAnnouncementInput] = useState('');
       const [adminMaintMsgInput, setAdminMaintMsgInput] = useState('Server is currently under maintenance for a new update. We will be back online shortly!');
       const [dismissedAnnouncementText, setDismissedAnnouncementText] = useState('');
-      const [spaceAnnouncementVisibleUntil, setSpaceAnnouncementVisibleUntil] = useState(0);
+      const [onlineSectorPilots, setOnlineSectorPilots] = useState([]);
+      const [onlineGlobalCount, setOnlineGlobalCount] = useState(1);
+      const remotePlayersRef = useRef({});
       const cloudReadyToSaveRef = useRef(false);
       const [toast, setToast] = useState(null);
       const [shipDestroyed, setShipDestroyed] = useState(false);
@@ -4919,7 +4928,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             setAdminAnnouncementInput(evData.announcement || '');
             if (evData.maintenance_message) setAdminMaintMsgInput(evData.maintenance_message);
             if ((evData.announcement || '').trim()) {
-              setSpaceAnnouncementVisibleUntil(Date.now() + 15000);
+              
             }
           }
         } catch (err) {
@@ -4980,7 +4989,6 @@ const { useState, useEffect, useRef, useMemo } = React;
               const prevAnn = (prev?.announcement || '').trim();
               if (nextAnn && nextAnn !== prevAnn) {
                 setDismissedAnnouncementText('');
-                setSpaceAnnouncementVisibleUntil(Date.now() + 15000);
               }
               return evData;
             });
@@ -4994,6 +5002,138 @@ const { useState, useEffect, useRef, useMemo } = React;
           await pollEvents();
         }, 8000);
         return () => clearInterval(syncIv);
+      }, [authSession?.user?.id]);
+
+      // Live Multiplayer Realtime Channel (Supabase Presence + 250ms Position Broadcast across all sectors)
+      useEffect(() => {
+        if (!supabaseClient || !authSession?.user?.id) {
+          remotePlayersRef.current = {};
+          setOnlineSectorPilots([]);
+          setOnlineGlobalCount(1);
+          return;
+        }
+        const myUid = authSession.user.id;
+        const buildMyPacket = () => {
+          const stNow = stateRef.current;
+          const curSt = statsRef.current;
+          const cNow = combatRef.current;
+          const curLvl = getLevelFromXp(stNow.xp || 0).level;
+          const rInf = calculateRankInfo(stNow, curLvl);
+          const resolvedSec = stNow.activeGate
+            ? `GATE:${stNow.activeGate.id}`
+            : resolvePortalTargetId(stNow.sectorId || 'main', stNow.companyId);
+          return {
+            uid: myUid,
+            pilotId: stNow.pilotId || 'OC-000000',
+            name: stNow.playerName || 'Pilot',
+            clanTag: stNow.clan?.tag || null,
+            companyId: stNow.companyId || null,
+            rankId: rInf?.current?.id || 1,
+            isAdmin: Boolean(stNow.adminUnlocked && stNow.adminRankActive),
+            isStealthed: Boolean(
+              (curSt?.ship?.id === 'sovereign_admin' && stNow.adminUnlocked && stNow.adminStealth) ||
+              (curSt?.ship?.id === 'fantom' && performance.now() < (cNow.shipSkillActiveUntil?.ft_total_cloak || 0))
+            ),
+            inSpace: tabRef.current === 'space' && !stNow.activeGate && !destroyedRef.current,
+            sectorId: resolvedSec,
+            shipId: curSt?.ship?.id || 'bugger',
+            designColor: curSt?.activeDesign?.color || null,
+            x: Math.round(cNow.liveShipX || 310),
+            y: Math.round(cNow.liveShipY || 295),
+            heading: Number((cNow.liveShipHeading || 0).toFixed(3)),
+            hp: Math.max(0, Math.round(cNow.playerHp || 0)),
+            maxHp: Math.max(1, Math.round(curSt?.maxHp || 3600)),
+            shield: Math.max(0, Math.round(cNow.playerShield || 0)),
+            maxShield: Math.max(0, Math.round(curSt?.maxShield || 1800)),
+            droneCount: (stNow.droneSlots || []).filter(d => d && d.type !== null).length,
+            formationId: stNow.droneFormation || 'standard',
+            ts: Date.now(),
+          };
+        };
+
+        const syncPresenceMap = (channelObj) => {
+          try {
+            const pState = channelObj.presenceState() || {};
+            const mySec = resolvePortalTargetId(stateRef.current.sectorId || 'main', stateRef.current.companyId);
+            const activeUids = new Set();
+            const sameSectorList = [];
+            Object.entries(pState).forEach(([keyUid, presences]) => {
+              const latest = Array.isArray(presences) && presences.length > 0 ? presences[presences.length - 1] : null;
+              if (!latest) return;
+              activeUids.add(keyUid);
+              if (keyUid === myUid) return;
+              const prevEntry = remotePlayersRef.current[keyUid];
+              remotePlayersRef.current[keyUid] = {
+                ...prevEntry,
+                ...latest,
+                targetX: Number(latest.x ?? prevEntry?.targetX ?? 310),
+                targetY: Number(latest.y ?? prevEntry?.targetY ?? 295),
+                renderX: prevEntry?.renderX ?? Number(latest.x ?? 310),
+                renderY: prevEntry?.renderY ?? Number(latest.y ?? 295),
+                targetHeading: Number(latest.heading ?? prevEntry?.targetHeading ?? 0),
+                renderHeading: prevEntry?.renderHeading ?? Number(latest.heading ?? 0),
+                lastSeenAt: performance.now(),
+              };
+              if (latest.inSpace && latest.sectorId === mySec && !latest.isStealthed) {
+                sameSectorList.push(remotePlayersRef.current[keyUid]);
+              }
+            });
+            Object.keys(remotePlayersRef.current).forEach(k => {
+              if (!activeUids.has(k)) delete remotePlayersRef.current[k];
+            });
+            setOnlineGlobalCount(Math.max(1, activeUids.size));
+            setOnlineSectorPilots(sameSectorList);
+          } catch (err) {}
+        };
+
+        const channel = supabaseClient.channel('orbital-conqueror-live-v1', {
+          config: { presence: { key: myUid } },
+        });
+
+        channel
+          .on('presence', { event: 'sync' }, () => syncPresenceMap(channel))
+          .on('presence', { event: 'join' }, () => syncPresenceMap(channel))
+          .on('presence', { event: 'leave' }, () => syncPresenceMap(channel))
+          .on('broadcast', { event: 'ship_move' }, ({ payload }) => {
+            if (!payload || !payload.uid || payload.uid === myUid) return;
+            const prevEntry = remotePlayersRef.current[payload.uid];
+            remotePlayersRef.current[payload.uid] = {
+              ...prevEntry,
+              ...payload,
+              targetX: Number(payload.x ?? prevEntry?.targetX ?? 310),
+              targetY: Number(payload.y ?? prevEntry?.targetY ?? 295),
+              renderX: prevEntry?.renderX ?? Number(payload.x ?? 310),
+              renderY: prevEntry?.renderY ?? Number(payload.y ?? 295),
+              targetHeading: Number(payload.heading ?? prevEntry?.targetHeading ?? 0),
+              renderHeading: prevEntry?.renderHeading ?? Number(payload.heading ?? 0),
+              lastSeenAt: performance.now(),
+            };
+          })
+          .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await channel.track(buildMyPacket());
+            }
+          });
+
+        const moveBroadcastIv = setInterval(() => {
+          const pkt = buildMyPacket();
+          channel.send({ type: 'broadcast', event: 'ship_move', payload: pkt });
+          const mySec = resolvePortalTargetId(stateRef.current.sectorId || 'main', stateRef.current.companyId);
+          const inSec = Object.values(remotePlayersRef.current).filter(
+            rp => rp && rp.uid !== myUid && rp.inSpace && rp.sectorId === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 12000)
+          );
+          setOnlineSectorPilots(inSec);
+        }, 280);
+
+        const presenceHeartbeatIv = setInterval(() => {
+          channel.track(buildMyPacket());
+        }, 4000);
+
+        return () => {
+          clearInterval(moveBroadcastIv);
+          clearInterval(presenceHeartbeatIv);
+          supabaseClient.removeChannel(channel);
+        };
       }, [authSession?.user?.id]);
 
       const fetchAllPlayersForAdmin = async () => {
@@ -9121,6 +9261,110 @@ const { useState, useEffect, useRef, useMemo } = React;
               ctx.fillText(enBar.name, enBar.x, enBar.y + enBar.radius + 17);
               ctx.restore();
             });
+
+            // Render Live Multiplayer Pilots in the Same Sector
+            const myResolvedSecCanvas = resolvePortalTargetId(st.sectorId || 'main', st.companyId);
+            if (!activeGateObj && remotePlayersRef.current) {
+              Object.values(remotePlayersRef.current).forEach(rp => {
+                if (!rp || !rp.inSpace || rp.isStealthed || rp.sectorId !== myResolvedSecCanvas) return;
+                if (now - (rp.lastSeenAt || 0) > 12000) return;
+
+                // Smooth position & heading interpolation
+                rp.renderX = (rp.renderX ?? rp.targetX) + ((rp.targetX ?? rp.renderX) - (rp.renderX ?? rp.targetX)) * Math.min(1, dtSec * 10);
+                rp.renderY = (rp.renderY ?? rp.targetY) + ((rp.targetY ?? rp.renderY) - (rp.renderY ?? rp.targetY)) * Math.min(1, dtSec * 10);
+                let hDiff = (rp.targetHeading ?? 0) - (rp.renderHeading ?? 0);
+                while (hDiff > Math.PI) hDiff -= Math.PI * 2;
+                while (hDiff < -Math.PI) hDiff += Math.PI * 2;
+                rp.renderHeading = (rp.renderHeading ?? 0) + hDiff * Math.min(1, dtSec * 10);
+
+                const rx = rp.renderX;
+                const ry = rp.renderY;
+                const rShipId = rp.shipId || 'bugger';
+                const rImg = SHIP_IMAGE_CACHE[rShipId] || SHIP_IMAGE_CACHE.bugger;
+                const rDrawSize =
+                  rShipId === 'titan' ? 58 :
+                  rShipId === 'nyxara' ? 56 :
+                  rShipId === 'crusander' ? 54 :
+                  rShipId === 'vanguard' ? 51 :
+                  rShipId === 'spunter' || rShipId === 'furis' ? 49 :
+                  rShipId === 'fantom' ? 46 :
+                  rShipId === 'spector' ? 47 : 44;
+
+                // Remote Drones Orbiting
+                const rDroneCnt = Math.min(10, Math.max(0, Number(rp.droneCount) || 0));
+                if (rDroneCnt > 0) {
+                  const rOffsets = getDronesFormationOffsets(rp.formationId || 'standard', rDroneCnt, c.angle);
+                  const rCos = Math.cos(rp.renderHeading);
+                  const rSin = Math.sin(rp.renderHeading);
+                  const rDroneImg = DRONE_IMAGE_CACHE.iris_lvl3 || DRONE_IMAGE_CACHE.orion_lvl3 || DRONE_IMAGE_CACHE.iris;
+                  rOffsets.forEach(off => {
+                    const dx = off.x * rCos - off.y * rSin;
+                    const dy = (off.x * rSin + off.y * rCos) * 0.66;
+                    ctx.save();
+                    ctx.translate(rx + dx, ry + dy);
+                    ctx.rotate(rp.renderHeading);
+                    if (rDroneImg && rDroneImg.complete && rDroneImg.naturalWidth > 0) {
+                      ctx.drawImage(rDroneImg, -8.5, -8.5, 17, 17);
+                    } else {
+                      ctx.fillStyle = '#94a3b8';
+                      ctx.beginPath();
+                      ctx.moveTo(0, -5);
+                      ctx.lineTo(-4.5, 4);
+                      ctx.lineTo(4.5, 4);
+                      ctx.closePath();
+                      ctx.fill();
+                    }
+                    ctx.restore();
+                  });
+                }
+
+                // Remote Warship Sprite
+                ctx.save();
+                ctx.translate(rx, ry);
+                ctx.rotate(rp.renderHeading);
+                if (rp.designColor) {
+                  ctx.shadowColor = rp.designColor;
+                  ctx.shadowBlur = 10;
+                }
+                if (rImg && rImg.complete && rImg.naturalWidth > 0) {
+                  ctx.drawImage(rImg, -rDrawSize / 2, -rDrawSize / 2, rDrawSize, rDrawSize);
+                } else {
+                  ctx.fillStyle = '#38bdf8';
+                  ctx.beginPath();
+                  ctx.moveTo(0, -18);
+                  ctx.lineTo(-14, 14);
+                  ctx.lineTo(14, 14);
+                  ctx.closePath();
+                  ctx.fill();
+                }
+                ctx.restore();
+
+                // Remote HP & Shield Bars
+                drawUnitBarsOnly(
+                  rx,
+                  ry - Math.round(27 * 1.15),
+                  Math.max(0, rp.hp || 0),
+                  Math.max(1, rp.maxHp || 3600),
+                  Math.max(0, rp.shield || 0),
+                  Math.max(0, rp.maxShield || 0)
+                );
+
+                // Remote Pilot Name + Company Tag
+                const rComp = getCompanyById(rp.companyId);
+                const isHostile = Boolean(rComp && activeCompany && rComp.id !== activeCompany.id);
+                const rTagPrefix = rp.clanTag ? `[${rp.clanTag}] ` : '';
+                const rCompTag = rComp ? ` (${rComp.tag})` : '';
+                const rFullLabel = `${rTagPrefix}${rp.name || 'Pilot'}${rCompTag}`;
+                ctx.save();
+                ctx.font = 'bold 9.5px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+                ctx.fillText(rFullLabel, rx + 0.7, ry + 34.7);
+                ctx.fillStyle = rp.isAdmin ? '#fde047' : isHostile ? '#fb7185' : '#7dd3fc';
+                ctx.fillText(rFullLabel, rx, ry + 34);
+                ctx.restore();
+              });
+            }
 
             const isSilvPasStealthed = Boolean(curStats.ship.id === 'sovereign_admin' && st.adminUnlocked && st.adminStealth);
             if (!isDestroyed) {
@@ -13972,7 +14216,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 setGlobalEvents(data);
                                 if ((data.announcement || '').trim()) {
                                   setDismissedAnnouncementText('');
-                                  setSpaceAnnouncementVisibleUntil(Date.now() + 15000);
+                                  
                                 }
                               }
                               notify('📢 Server announcement broadcast to Lobby & Space!');
@@ -15683,7 +15927,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.38.2 (Live Space Announcements & Maintenance Alert)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.39 (Live Space Multiplayer & Persistent Space Broadcasts)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
@@ -16569,7 +16813,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                     {/* LIVE SERVER ANNOUNCEMENT & MAINTENANCE ALERT IN SPACE HUD */}
                     {(() => {
                       const annText = (globalEvents?.announcement || '').trim();
-                      const showSpaceAnn = Boolean(annText && annText !== dismissedAnnouncementText && Date.now() < spaceAnnouncementVisibleUntil);
+                      const showSpaceAnn = Boolean(annText && annText !== dismissedAnnouncementText );
                       const showSpaceMaint = Boolean(globalEvents?.maintenance_active);
                       if (!showSpaceAnn && !showSpaceMaint) return null;
                       return (
@@ -17022,6 +17266,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                           >
                             <div className="flex items-center justify-between px-0.5 pb-0.5 text-[7.5px] font-mono font-black drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
                               <span className="text-cyan-300">[{secCode}]</span>
+                              <span className="text-emerald-300">● {onlineGlobalCount}</span>
                               <span className="text-slate-300 group-hover:text-cyan-200">🗺️</span>
                             </div>
                             <svg width="115" height="76" viewBox={`0 0 ${mapW} ${mapH}`} preserveAspectRatio="none" className="rounded-md bg-[#030b1a]/45 overflow-hidden block">
@@ -17084,6 +17329,22 @@ const { useState, useEffect, useRef, useMemo } = React;
                                   </text>
                                 </g>
                               ))}
+
+                              {/* Other Live Pilots in Sector on Radar Minimap */}
+                              {!state.activeGate && onlineSectorPilots.map(rp => {
+                                const isEnemyComp = Boolean(rp.companyId && state.companyId && rp.companyId !== state.companyId);
+                                return (
+                                  <circle
+                                    key={rp.uid}
+                                    cx={rp.x}
+                                    cy={rp.y}
+                                    r={18}
+                                    fill={isEnemyComp ? '#f43f5e' : '#38bdf8'}
+                                    stroke="#ffffff"
+                                    strokeWidth="5"
+                                  />
+                                );
+                              })}
 
                               {/* Bonus Boxes & Booty Boxes on Live Radar Minimap */}
                               {(hudSnapshot.bonusCoords || []).map(bx => (
