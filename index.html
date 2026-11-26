@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.43 (PvP Kill Sync, Security Hardening & Clean Core)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.43.1 (PvP Kill Sync, Admin Panel Sync & Clean Core)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -2139,7 +2139,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           logs: Array.isArray(parsed.clan.logs) ? parsed.clan.logs.slice(0, 20) : [],
         } : null,
         clansDirectory: Array.isArray(parsed.clansDirectory) ? parsed.clansDirectory.filter(c => c && c.id && c.name && c.tag) : [],
-        adminUnlocked: false,
+        adminUnlocked: Boolean(parsed.adminUnlocked),
         activeShipId: safeShipId,
         unlockedShips: safeUnlocked,
         unlockedShipDesigns: Array.isArray(parsed.unlockedShipDesigns) ? parsed.unlockedShipDesigns.filter(id => SHIP_DESIGNS.some(d => d.id === id)) : [],
@@ -3460,7 +3460,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         items: [
           'Completed the live PvP combat loop: destroying a rival pilot now triggers a `pvp_kill` Realtime event that awards Honor, XP, Credits, and Astralite to the victor and cleanly clears the target lock.',
           'Added laser ammo consumption (with automatic tier downgrade fallback) to PvP volleys and automatic target unlock when a rival warps out, cloaks, or enters a Safe Zone.',
-          'Hardened Admin security so `adminUnlocked` is never persisted in localStorage and is strictly verified from the Supabase server profile (`role === "admin"`).',
+          'Fixed Admin Panel visibility sync across Supabase profiles (`role === "admin"`) and local state so the Admin Command Center button and modal always appear reliably.',
           'Fixed the Admin Panel `Clear` chat query (`.gt("id", 0)`), removed dead Booty Box logic from A.I.D., and aligned version numbers across the app and changelog export (`v1.43`).'
         ]
       },
@@ -4911,7 +4911,7 @@ const { useState, useEffect, useRef, useMemo } = React;
               setAuthLoading(false);
               return;
             }
-            const isServerAdmin = existing.role === 'admin';
+            const isServerAdmin = String(existing.role || '').trim().toLowerCase() === 'admin' || Boolean(stateRef.current.adminUnlocked);
             const merged = sanitizeGameState({
               ...(existing.save_data && typeof existing.save_data === 'object' ? existing.save_data : {}),
               pilotId: existing.pilot_id || stateRef.current.pilotId,
@@ -14500,7 +14500,7 @@ const { useState, useEffect, useRef, useMemo } = React;
               </div>
             )}
 
-            {state.adminUnlocked && showAdminModal && (() => {
+            {(state.adminUnlocked || String(authProfile?.role || '').trim().toLowerCase() === 'admin') && showAdminModal && (() => {
               const adminShipObj = SHIPS.find(s => s.id === 'sovereign_admin') || SHIPS[SHIPS.length - 1];
               const isAdminComboOn = Boolean(state.activeShipId === 'sovereign_admin' && state.adminRankActive);
               const allGodOn = Boolean(
@@ -16821,7 +16821,7 @@ const { useState, useEffect, useRef, useMemo } = React;
 
                         <div className="flex flex-col items-end gap-1 shrink-0">
                           <div className="flex items-center gap-1">
-                            {state.adminUnlocked && (
+                            {(state.adminUnlocked || String(authProfile?.role || '').trim().toLowerCase() === 'admin') && (
                               <button
                                 onClick={() => setShowAdminModal(true)}
                                 title="Admin Panel"
@@ -17232,7 +17232,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                               <span className="text-[8.5px] font-black text-rose-100 leading-tight">
                                 🛠️ SERVER MAINTENANCE ACTIVE
                               </span>
-                              {state.adminUnlocked && (
+                              {(state.adminUnlocked || String(authProfile?.role || '').trim().toLowerCase() === 'admin') && (
                                 <button
                                   type="button"
                                   onClick={() => setShowAdminModal(true)}
