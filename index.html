@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.34</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.35</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -1865,7 +1865,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.34',
+      version: '1.35',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2017,8 +2017,8 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.34',
-        playerName: 'SilvPas',
+        version: '1.35',
+        playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
         bootyKeys: Number.isFinite(parsed.bootyKeys) ? Math.max(0, Math.floor(parsed.bootyKeys)) : 0,
@@ -2182,12 +2182,12 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <button
                     onClick={() => {
                       try {
-                        const raw = localStorage.getItem('silvpas_orbital_conqueror_v172');
+                        const raw = localStorage.getItem('silvpas_orbital_conqueror_account_v1') || localStorage.getItem('silvpas_orbital_conqueror_v172');
                         if (raw) {
                           const fixed = sanitizeGameState(JSON.parse(raw));
                           fixed.sectorId = 'main';
                           fixed.autoHunt = false;
-                          localStorage.setItem('silvpas_orbital_conqueror_v172', JSON.stringify(fixed));
+                          localStorage.setItem('silvpas_orbital_conqueror_account_v1', JSON.stringify(fixed)); localStorage.setItem('silvpas_orbital_conqueror_v172', JSON.stringify(fixed));
                         }
                       } catch (e) {}
                       window.location.reload();
@@ -2202,9 +2202,9 @@ const { useState, useEffect, useRef, useMemo } = React;
                         for (let v = 106; v <= 140; v++) {
                           localStorage.removeItem(`silvpas_idle_space_v${v}`);
             localStorage.removeItem('silvpas_idle_space_v131_1');
-                          localStorage.removeItem('silvpas_orbital_conqueror_v172');
+                          localStorage.removeItem('silvpas_orbital_conqueror_account_v1'); localStorage.removeItem('silvpas_orbital_conqueror_v172');
                         }
-                        localStorage.removeItem('silvpas_orbital_conqueror_v172');
+                        localStorage.removeItem('silvpas_orbital_conqueror_account_v1'); localStorage.removeItem('silvpas_orbital_conqueror_v172');
                       } catch (e) {}
                       window.location.reload();
                     }}
@@ -3387,6 +3387,14 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.35 • Persistent Pilot Accounts, Automatic Update Migration & Cross-Device Backup Code',
+        items: [
+          'Replaced version-wiping storage keys with a permanent account save slot (silvpas_orbital_conqueror_account_v1) plus automatic migration so future GitHub updates preserve 100% of pilot progress.',
+          'Unlocked custom Pilot Name editing in Settings while preserving unique Pilot ID (#OC-XXXXXX) across Clans and Leaderboards.',
+          'Added one-tap Account Backup Code (OC1-...) copy/restore and JSON account export in Settings & Profile for seamless progress transfer across PC and mobile devices.'
+        ]
+      },
+      {
         title: 'v1.34 • Complete 3D Visual Sprite Suite (11 Ships, 4 Drones, 3 Company Citadels & Evolving A.I.D.)',
         items: [
           'Integrated 3D PBR transparent sprites across the entire Space Canvas, Main Menu Hangar preview, Equip slots, and Shop for all 11 player warships (Bugger, Ferder, Spector, Furis, Spunter, Crusander, Vanguard, Fantom, Titan, Nyxara, and SilvPas Ship).',
@@ -3655,61 +3663,44 @@ const { useState, useEffect, useRef, useMemo } = React;
       if (onDone) onDone();
     }
 
+    function encodeAccountBackupCode(stObj) {
+      const clean = sanitizeGameState(stObj);
+      const json = JSON.stringify({ ...clean, exportedAt: Date.now() });
+      const bytes = new TextEncoder().encode(json);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return 'OC1-' + btoa(bin);
+    }
+
+    function decodeAccountBackupCode(rawCode) {
+      const trimmed = String(rawCode || '').trim();
+      if (!trimmed.startsWith('OC1-')) {
+        throw new Error('Cod invalid! Trebuie să înceapă cu OC1-');
+      }
+      const b64 = trimmed.slice(4).replace(/\s+/g, '');
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const json = new TextDecoder().decode(bytes);
+      const parsed = JSON.parse(json);
+      if (!parsed || typeof parsed !== 'object') throw new Error('Date corupte în codul de cont.');
+      return sanitizeGameState(parsed);
+    }
+
     function GameApp() {
       const [state, setState] = useState(() => {
         try {
-          // Curăță automat salvările versiunilor anterioare (v1.06 -> v1.31) pentru testare curată
-          for (let v = 106; v <= 131; v++) {
-            localStorage.removeItem(`silvpas_idle_space_v${v}`);
-          }
-          localStorage.removeItem('silvpas_idle_space_v131_1');
-          localStorage.removeItem('silvpas_idle_space_v131_2');
-          localStorage.removeItem('silvpas_idle_space_v132');
-          localStorage.removeItem('silvpas_idle_space_v133');
-          localStorage.removeItem('silvpas_idle_space_v134');
-          localStorage.removeItem('silvpas_idle_space_v135');
-          localStorage.removeItem('silvpas_idle_space_v136');
-          localStorage.removeItem('silvpas_idle_space_v137');
-          localStorage.removeItem('silvpas_idle_space_v138');
-          localStorage.removeItem('silvpas_idle_space_v139');
-          localStorage.removeItem('silvpas_idle_space_v140');
-          localStorage.removeItem('silvpas_idle_space_v141');
-          localStorage.removeItem('silvpas_idle_space_v142');
-          localStorage.removeItem('silvpas_idle_space_v143');
-          localStorage.removeItem('silvpas_idle_space_v144');
-          localStorage.removeItem('silvpas_idle_space_v145');
-          localStorage.removeItem('silvpas_idle_space_v146');
-          localStorage.removeItem('silvpas_idle_space_v147');
-          localStorage.removeItem('silvpas_idle_space_v148');
-          localStorage.removeItem('silvpas_idle_space_v149');
-          localStorage.removeItem('silvpas_idle_space_v150');
-          localStorage.removeItem('silvpas_idle_space_v151');
-          localStorage.removeItem('silvpas_idle_space_v151_1');
-          localStorage.removeItem('silvpas_idle_space_v152');
-          localStorage.removeItem('silvpas_idle_space_v153');
-          localStorage.removeItem('silvpas_idle_space_v154');
-          localStorage.removeItem('silvpas_idle_space_v155');
-          localStorage.removeItem('silvpas_idle_space_v156');
-          localStorage.removeItem('silvpas_idle_space_v157');
-          localStorage.removeItem('silvpas_idle_space_v158');
-          localStorage.removeItem('silvpas_idle_space_v159');
-          localStorage.removeItem('silvpas_idle_space_v160');
-          localStorage.removeItem('silvpas_idle_space_v161');
-          localStorage.removeItem('silvpas_idle_space_v162');
-          localStorage.removeItem('silvpas_idle_space_v163');
-          localStorage.removeItem('silvpas_orbital_conqueror_v164');
-          localStorage.removeItem('silvpas_orbital_conqueror_v165');
-          localStorage.removeItem('silvpas_orbital_conqueror_v166');
-          localStorage.removeItem('silvpas_orbital_conqueror_v167');
-          localStorage.removeItem('silvpas_orbital_conqueror_v168');
-          localStorage.removeItem('silvpas_orbital_conqueror_v169');
-          localStorage.removeItem('silvpas_orbital_conqueror_v170');
-          localStorage.removeItem('silvpas_orbital_conqueror_v171');
-          const saved = localStorage.getItem('silvpas_orbital_conqueror_v172');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed && (parsed.version === '1' || parsed.version === '1.01' || parsed.version === '1.02' || parsed.version === '1.03' || parsed.version === '1.04' || parsed.version === '1.05' || parsed.version === '1.06' || parsed.version === '1.07' || parsed.version === '1.08' || parsed.version === '1.09' || parsed.version === '1.10' || parsed.version === '1.11' || parsed.version === '1.12' || parsed.version === '1.13' || parsed.version === '1.14' || parsed.version === '1.15' || parsed.version === '1.16' || parsed.version === '1.17' || parsed.version === '1.18' || parsed.version === '1.19' || parsed.version === '1.20' || parsed.version === '1.21' || parsed.version === '1.22' || parsed.version === '1.23' || parsed.version === '1.24' || parsed.version === '1.25' || parsed.version === '1.26' || parsed.version === '1.27' || parsed.version === '1.28' || parsed.version === '1.30' || parsed.version === '1.31' || parsed.version === '1.32' || parsed.version === '2.42')) {
-              return sanitizeGameState(parsed);
+          // Persistent Account Storage: migrate automatically from v172 or any older key into permanent save key
+          const PERM_SAVE_KEY = 'silvpas_orbital_conqueror_account_v1';
+          const rawPerm = localStorage.getItem(PERM_SAVE_KEY) || localStorage.getItem('silvpas_orbital_conqueror_v172');
+          if (rawPerm) {
+            const parsed = JSON.parse(rawPerm);
+            if (parsed && typeof parsed === 'object') {
+              const migrated = sanitizeGameState(parsed);
+              try {
+                localStorage.setItem(PERM_SAVE_KEY, JSON.stringify({ ...migrated, lastSaved: Date.now() }));
+              } catch (err) {}
+              return migrated;
             }
           }
         } catch (e) {}
@@ -3755,6 +3746,8 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [nameInput, setNameInput] = useState(state.playerName);
       const [petNameInput, setPetNameInput] = useState(state.petName || 'A.I.D.');
       const [promoInput, setPromoInput] = useState('');
+      const [accountImportInput, setAccountImportInput] = useState('');
+      const [accountCodePreview, setAccountCodePreview] = useState('');
       const [toast, setToast] = useState(null);
       const [shipDestroyed, setShipDestroyed] = useState(false);
       const [showGatesModal, setShowGatesModal] = useState(false);
@@ -4644,7 +4637,9 @@ const { useState, useEffect, useRef, useMemo } = React;
       useEffect(() => {
         const t = setInterval(() => {
           try {
-            localStorage.setItem('silvpas_orbital_conqueror_v172', JSON.stringify({ ...state, lastSaved: Date.now() }));
+            const payloadStr = JSON.stringify({ ...state, lastSaved: Date.now() });
+            localStorage.setItem('silvpas_orbital_conqueror_account_v1', payloadStr);
+            localStorage.setItem('silvpas_orbital_conqueror_v172', payloadStr);
           } catch (e) {}
         }, 4000);
         return () => clearInterval(t);
@@ -13922,7 +13917,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                             for (let v = 106; v <= 130; v++) {
                               localStorage.removeItem(`silvpas_idle_space_v${v}`);
                             }
-                            localStorage.removeItem('silvpas_orbital_conqueror_v172');
+                            localStorage.removeItem('silvpas_orbital_conqueror_account_v1'); localStorage.removeItem('silvpas_orbital_conqueror_v172');
                           } catch (e) {}
                           combatRef.current.enemy = null;
                           combatRef.current.projectiles = [];
@@ -14630,6 +14625,19 @@ const { useState, useEffect, useRef, useMemo } = React;
                           </div>
                         </div>
 
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowProfileModal(false);
+                            setNameInput(state.playerName || 'SilvPas');
+                            setShowSettingsModal(true);
+                          }}
+                          className="w-full py-1.5 px-3 rounded-xl bg-emerald-950/90 border border-emerald-400/70 text-[10px] font-black text-emerald-200 flex items-center justify-center gap-1.5 active:scale-95"
+                        >
+                          <span>🔐</span>
+                          <span>Gestionează Cont / Backup & Transfer Dispozitiv</span>
+                        </button>
+
                         {/* Activity & Progression Summary */}
                         <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
                           <div className="bg-slate-900/80 border border-slate-800 rounded-lg p-1.5">
@@ -14750,19 +14758,133 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.63</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.35 (Persistent Accounts)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
 
-                  <div className="bg-slate-900/95 p-3 rounded-xl border border-cyan-700/80 space-y-1.5">
+                  <div className="bg-slate-900/95 p-3 rounded-xl border border-cyan-700/80 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-cyan-300">Pilot Name</span>
-                      <span className="text-[9px] font-bold text-amber-300 uppercase">🔒 Locked Official Identity</span>
-                    </div>
-                    <div className="flex items-center justify-between bg-slate-950 border border-cyan-600/70 rounded-lg px-2.5 py-1.5 text-xs font-black text-white">
-                      <span>SilvPas</span>
+                      <span className="text-xs font-bold text-cyan-300">Identitate Cont Pilot</span>
                       <span className="text-[10px] text-cyan-400 font-mono">{state.pilotId}</span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        maxLength={18}
+                        placeholder="Nume Pilot..."
+                        className="flex-1 bg-slate-950 border border-cyan-600/80 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const clean = nameInput.trim().slice(0, 18);
+                          if (clean.length < 2) return notify('Numele pilotului trebuie să aibă minim 2 caractere!');
+                          setState(p => ({
+                            ...p,
+                            playerName: clean,
+                            clan: p.clan ? {
+                              ...p.clan,
+                              members: (p.clan.members || []).map(m => m.pilotId === p.pilotId ? { ...m, name: clean } : m)
+                            } : null
+                          }));
+                          notify(`✅ Nume cont actualizat: ${clean}`);
+                        }}
+                        className="bg-cyan-900 border border-cyan-400 px-3 py-1.5 rounded-lg text-xs font-black text-amber-300 active:scale-95"
+                      >
+                        Salvează
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Persistent Account & Cross-Device Backup */}
+                  <div className="bg-slate-900/95 p-3 rounded-xl border border-emerald-500/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-black text-emerald-300 uppercase">🔐 Cont & Backup Progres</div>
+                        <div className="text-[9.5px] text-slate-300">Progresul se păstrează automat la orice update. Transferă contul pe alt dispozitiv cu codul de backup:</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            const code = encodeAccountBackupCode(state);
+                            setAccountCodePreview(code);
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              navigator.clipboard.writeText(code).catch(() => {});
+                            }
+                            notify('📋 Codul de cont (OC1-...) a fost generat și copiat!');
+                          } catch (err) {
+                            notify('Eroare la generarea codului de cont.');
+                          }
+                        }}
+                        className="py-1.5 px-2.5 rounded-lg bg-emerald-950 border border-emerald-400 text-[10.5px] font-black text-emerald-200 active:scale-95"
+                      >
+                        📋 Copiază Cod Cont
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            const code = encodeAccountBackupCode(state);
+                            const blob = new Blob([JSON.stringify({ accountCode: code, pilotId: state.pilotId, playerName: state.playerName, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `OrbitalConqueror_${state.playerName || 'Pilot'}_${state.pilotId}.json`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            notify('💾 Fișier backup cont descărcat!');
+                          } catch (err) {
+                            notify('Eroare la exportul fișierului.');
+                          }
+                        }}
+                        className="py-1.5 px-2.5 rounded-lg bg-sky-950 border border-sky-400 text-[10.5px] font-black text-sky-200 active:scale-95"
+                      >
+                        💾 Export Fișier (.JSON)
+                      </button>
+                    </div>
+                    {accountCodePreview && (
+                      <textarea
+                        readOnly
+                        value={accountCodePreview}
+                        onFocus={e => e.target.select()}
+                        rows={2}
+                        className="w-full bg-slate-950 border border-emerald-600/60 rounded-lg p-1.5 text-[9px] font-mono text-emerald-200 outline-none"
+                      />
+                    )}
+                    <div className="flex gap-1.5 pt-0.5">
+                      <input
+                        value={accountImportInput}
+                        onChange={e => setAccountImportInput(e.target.value)}
+                        placeholder="Lipește codul OC1-... pentru încărcare cont"
+                        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] font-mono text-white outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            const restored = decodeAccountBackupCode(accountImportInput);
+                            const payloadStr = JSON.stringify({ ...restored, lastSaved: Date.now() });
+                            localStorage.setItem('silvpas_orbital_conqueror_account_v1', payloadStr);
+                            localStorage.setItem('silvpas_orbital_conqueror_v172', payloadStr);
+                            setState(restored);
+                            setNameInput(restored.playerName || 'SilvPas');
+                            setAccountImportInput('');
+                            notify(`✅ Cont încărcat: ${restored.playerName} (${restored.pilotId})!`);
+                          } catch (err) {
+                            notify(`⚠️ ${err.message || 'Cod cont invalid!'}`);
+                          }
+                        }}
+                        className="bg-amber-950 border border-amber-400 px-2.5 py-1.5 rounded-lg text-[10px] font-black text-amber-200 active:scale-95 shrink-0"
+                      >
+                        Încarcă
+                      </button>
                     </div>
                   </div>
 
