@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.43.1 (PvP Kill Sync, Admin Panel Sync & Clean Core)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.44 (Online Clans, Full PvP Combat & Live Admin Gifts)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -60,7 +60,7 @@ const { useState, useEffect, useRef, useMemo } = React;
 
 
     // ============================================================================
-    // CATALOG DATA (SilvPas Idle Games • Version 1.43 — Orbital Conqueror)
+    // CATALOG DATA (SilvPas Idle Games • Version 1.44 — Orbital Conqueror)
     // ============================================================================
 
     const SHIP_SPRITES_3D = {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.43',
+      version: '1.44',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -1988,15 +1988,12 @@ const { useState, useEffect, useRef, useMemo } = React;
       activeGate: null, // { id: 'alpha', waveIndex: 0 }
       redeemedCodes: [],
       sectorId: 'main',
-      autoHunt: false,
       autoCollect: false,
-      comboHuntCollect: false,
       boxesCollected: 0,
       bootyKeys: 0,
       bootyBoxesOpened: 0,
       heliosParts: 0,
       aetherParts: 0,
-      petCollectBooty: false,
       selectedAmmo: 'x1',
       selectedRocket: 'plt2026',
       selectedLauncherAmmo: 'eco10',
@@ -2074,7 +2071,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.43',
+        version: '1.44',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -2082,7 +2079,6 @@ const { useState, useEffect, useRef, useMemo } = React;
         bootyBoxesOpened: Number.isFinite(parsed.bootyBoxesOpened) ? Math.max(0, Math.floor(parsed.bootyBoxesOpened)) : 0,
         heliosParts: Number.isFinite(parsed.heliosParts) ? Math.max(0, Math.min(45, Math.floor(parsed.heliosParts))) : 0,
         aetherParts: Number.isFinite(parsed.aetherParts) ? Math.max(0, Math.min(45, Math.floor(parsed.aetherParts))) : 0,
-        petCollectBooty: Boolean(parsed.petCollectBooty),
         ores: { ...createEmptyOres(), ...(parsed.ores && typeof parsed.ores === 'object' ? parsed.ores : {}) },
         techInventory: { ...createEmptyTechInventory(), ...(parsed.techInventory && typeof parsed.techInventory === 'object' ? parsed.techInventory : {}) },
         oreBoosts: { ...createEmptyOreBoosts(), ...(parsed.oreBoosts && typeof parsed.oreBoosts === 'object' ? parsed.oreBoosts : {}) },
@@ -2245,7 +2241,6 @@ const { useState, useEffect, useRef, useMemo } = React;
                         if (raw) {
                           const fixed = sanitizeGameState(JSON.parse(raw));
                           fixed.sectorId = 'main';
-                          fixed.autoHunt = false;
                           localStorage.setItem('silvpas_orbital_conqueror_account_v1', JSON.stringify(fixed)); localStorage.setItem('silvpas_orbital_conqueror_v172', JSON.stringify(fixed));
                         }
                       } catch (e) {}
@@ -3456,6 +3451,15 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.44 • Online Supabase Clans, Full PvP Arsenal & Live Admin Gift Sync',
+        items: [
+          'Connected the Clan System directly to Supabase (`public.clans`) so players can create, search, join, leave, and donate Credits/Astralite to shared server clans in real time.',
+          'Upgraded PvP combat to support Rockets (RK-10/20/40), Missile Launchers (ML-1/2/3), A.I.D. M-Sentinel Guard fire, and Fantom active abilities (JAM-X & Target Mark +15%).',
+          'Added instant Realtime `admin_gift` delivery so Credits & Astralite gifted from Admin Command Center appear immediately on online players without being overwritten by auto-save.',
+          'Cleaned obsolete legacy state flags (`autoHunt`, `comboHuntCollect`, `petCollectBooty`) across saves and UI checks.'
+        ]
+      },
+      {
         title: 'v1.43 • PvP Kill Rewards & Target Sync, Admin Role Hardening & Core Cleanup',
         items: [
           'Completed the live PvP combat loop: destroying a rival pilot now triggers a `pvp_kill` Realtime event that awards Honor, XP, Credits, and Astralite to the victor and cleanly clears the target lock.',
@@ -3807,7 +3811,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'CHANGELOG_v1.43.md';
+      a.download = 'CHANGELOG_v1.44.md';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3933,6 +3937,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [onlineSectorPilots, setOnlineSectorPilots] = useState([]);
       const [onlineGlobalCount, setOnlineGlobalCount] = useState(1);
       const [serverTopPlayers, setServerTopPlayers] = useState([]);
+      const [serverClansList, setServerClansList] = useState([]);
       const [spaceChatMessages, setSpaceChatMessages] = useState([]);
       const [spaceChatInput, setSpaceChatInput] = useState('');
       const [spaceChatOpen, setSpaceChatOpen] = useState(false);
@@ -4096,7 +4101,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         if (!box) return;
         const c = combatRef.current;
         const now = performance.now();
-        const isCombo = Boolean(state.comboHuntCollect);
+        const isCombo = false;
         const withinStreak = now - (c.lastBoxCollectedAt || 0) < 55000;
         const nextStreak = isCombo ? (withinStreak ? Math.min(5, (c.boxComboStreak || 0) + 1) : 1) : 1;
         c.boxComboStreak = nextStreak;
@@ -5085,6 +5090,45 @@ const { useState, useEffect, useRef, useMemo } = React;
           if (Array.isArray(topRows)) {
             setServerTopPlayers(topRows);
           }
+          try {
+            const { data: clanRows } = await supabaseClient
+              .from('clans')
+              .select('*')
+              .order('treasury_ast', { ascending: false })
+              .limit(50);
+            if (Array.isArray(clanRows)) {
+              const mappedClans = clanRows.map(r => ({
+                id: r.id,
+                name: r.name,
+                tag: r.tag,
+                desc: r.description || '',
+                recruitMode: r.recruit_mode === 'request' ? 'request' : 'open',
+                companyTag: r.company_tag || null,
+                treasuryCr: Number(r.treasury_cr || 0),
+                treasuryAst: Number(r.treasury_ast || 0),
+                createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+                members: Array.isArray(r.members) ? r.members : [],
+                joinRequests: Array.isArray(r.join_requests) ? r.join_requests : [],
+                logs: Array.isArray(r.logs) ? r.logs : [],
+              }));
+              setServerClansList(mappedClans);
+              const myCurClan = stateRef.current?.clan;
+              if (myCurClan && myCurClan.id) {
+                const srvMatch = mappedClans.find(c => c.id === myCurClan.id);
+                if (srvMatch) {
+                  const stillMember = (srvMatch.members || []).some(m => m.pilotId === stateRef.current.pilotId);
+                  if (!stillMember) {
+                    setState(prev => ({ ...prev, clan: null }));
+                    notify(`🛡️ Ai fost eliminat din clanul [${srvMatch.tag}] ${srvMatch.name}.`);
+                  } else {
+                    setState(prev => ({ ...prev, clan: srvMatch }));
+                  }
+                } else {
+                  setState(prev => ({ ...prev, clan: null }));
+                }
+              }
+            }
+          } catch (e) {}
         };
         pollEvents();
         const syncIv = setInterval(async () => {
@@ -5228,7 +5272,23 @@ const { useState, useEffect, useRef, useMemo } = React;
             const stNow = stateRef.current;
             if (!c || !curSt || destroyedRef.current || c.inSafeZone) return;
             if (godModeRef.current?.hp || performance.now() < (c.ishActiveUntil || 0)) return;
-            let dmgIn = Math.max(1, Math.floor(Number(payload.dmg) || 0));
+            if (payload.jamSec) {
+              c.enemyStunUntil = Math.max(c.enemyStunUntil || 0, performance.now() + Number(payload.jamSec) * 1000);
+              c.targetPvpUid = null;
+              setPvpTargetUid(null);
+              manualEngageRef.current = false;
+              setManualEngage(false);
+              c.floaters.push({ x: (c.liveShipX || 310), y: (c.liveShipY || 295) - 34, text: `⚡ JAM-X (${payload.jamSec}s)!`, color: '#fde047', life: 1.0 });
+            }
+            if (payload.markSec) {
+              c.pvpMarkedUntil = Math.max(c.pvpMarkedUntil || 0, performance.now() + Number(payload.markSec) * 1000);
+              c.floaters.push({ x: (c.liveShipX || 310), y: (c.liveShipY || 295) - 46, text: `🎯 TARGET MARKED (+15%)`, color: '#fca5a5', life: 1.0 });
+            }
+            let dmgIn = Math.max(0, Math.floor(Number(payload.dmg) || 0));
+            if (dmgIn <= 0) return;
+            if (performance.now() < (c.pvpMarkedUntil || 0)) {
+              dmgIn = Math.floor(dmgIn * 1.15);
+            }
             c.lastDamageTakenAt = performance.now();
             c.playerShieldFlash = 0.25;
             if (c.playerShield > 0) {
@@ -5297,6 +5357,22 @@ const { useState, useEffect, useRef, useMemo } = React;
             }
             notify(`🏆 Victorie PvP împotriva ${payload.victimName || 'Pilot'}! +${fmt(rewardHonor)} Onoare, +${fmt(rewardAst)} AST!`);
           })
+          .on('broadcast', { event: 'admin_gift' }, ({ payload }) => {
+            if (!payload || payload.targetUid !== myUid) return;
+            const gCr = Math.max(0, Math.floor(Number(payload.credits) || 0));
+            const gAst = Math.max(0, Math.floor(Number(payload.uridium) || 0));
+            if (gCr <= 0 && gAst <= 0) return;
+            setState(prev => {
+              const updated = {
+                ...prev,
+                credits: (prev.credits || 0) + gCr,
+                uridium: (prev.uridium || 0) + gAst,
+              };
+              syncProfileToCloud(updated, myUid);
+              return updated;
+            });
+            notify(`🎁 Cadou de la Administrator: +${fmt(gCr)} CR & +${fmt(gAst)} AST!`);
+          })
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
               const initPkt = buildMyPacket();
@@ -5344,8 +5420,8 @@ const { useState, useEffect, useRef, useMemo } = React;
             });
           } catch (err) {}
         };
-        combatRef.current.sendPvpHit = (targetUid, dmgVal) => {
-          if (!targetUid || !dmgVal) return;
+        combatRef.current.sendPvpHit = (targetUid, dmgVal, extraMeta = {}) => {
+          if (!targetUid || (!dmgVal && !extraMeta.jamSec && !extraMeta.markSec)) return;
           const stNow = stateRef.current;
           channel.send({
             type: 'broadcast',
@@ -5354,8 +5430,17 @@ const { useState, useEffect, useRef, useMemo } = React;
               targetUid,
               attackerUid: myUid,
               attackerName: stNow.playerName || 'Pilot',
-              dmg: Math.floor(dmgVal),
+              dmg: Math.max(0, Math.floor(dmgVal || 0)),
+              ...extraMeta,
             }
+          });
+        };
+        combatRef.current.sendAdminGift = (targetUid, addCr, addAst) => {
+          if (!targetUid) return;
+          channel.send({
+            type: 'broadcast',
+            event: 'admin_gift',
+            payload: { targetUid, credits: addCr, uridium: addAst }
           });
         };
 
@@ -6335,7 +6420,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           // Hybrid Natural A.I.D. AI (collects Bonus Boxes only; Booty Boxes are strictly Ship-only):
           const PET_LOOT_RANGE = 380;
           const PET_RECALL_RANGE = 430;
-          const isCollectEnabled = Boolean(st.autoCollect || st.comboHuntCollect || curStats.petStats?.hasPetLooter) && !isDestroyed && !st.activeGate;
+          const isCollectEnabled = Boolean(st.autoCollect || curStats.petStats?.hasPetLooter) && !isDestroyed && !st.activeGate;
           const petActiveNow = Boolean(curStats.petStats?.active);
           const petHasCombatModule = Boolean(curStats.petStats?.hasPetGuard);
           const shipActivelyFiringOrEngaged = Boolean(
@@ -7014,8 +7099,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                         setManualEngage(false);
                         setState(prev => ({
                           ...prev,
-                          autoHunt: false,
-                          credits: prev.credits + cGain,
+                                              credits: prev.credits + cGain,
                           uridium: prev.uridium + uGain,
                           xp: prev.xp + killedXp,
                           honor: prev.honor + killedHonor,
@@ -7164,8 +7248,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                         setState(prev => ({
                           ...prev,
                           sectorId: 'main',
-                          autoHunt: false,
-                          activeGate: null,
+                                              activeGate: null,
                           gates: { ...prev.gates, [failedGateId]: 0 },
                           gateLives: { ...(prev.gateLives || {}), [failedGateId]: 3 },
                           activatedGates: { ...(prev.activatedGates || {}), [failedGateId]: false }
@@ -7175,14 +7258,13 @@ const { useState, useEffect, useRef, useMemo } = React;
                         setState(prev => ({
                           ...prev,
                           sectorId: 'main',
-                          autoHunt: false,
-                          activeGate: null,
+                                              activeGate: null,
                           gateLives: { ...(prev.gateLives || {}), [failedGateId]: nextLives }
                         }));
                         notify(`⚠️ Distrus în ${gMeta?.name || 'Poartă'}! Vieți rămase: ${nextLives}/3.`);
                       }
                     } else {
-                      setState(prev => ({ ...prev, sectorId: 'main', autoHunt: false, activeGate: null }));
+                      setState(prev => ({ ...prev, sectorId: 'main',  activeGate: null }));
                       notify('Ship distrusă! Ai fost teleportat automat în Main Map.');
                     }
                   }
@@ -9649,9 +9731,50 @@ const { useState, useEffect, useRef, useMemo } = React;
                         x: pX + 8, y: pY - 8, tx: rx, ty: ry,
                         progress: 0, color: pvpAmmoObj.color || '#ef4444', dmg: 0, fromPlayer: false, isVisualOnly: true
                       });
-                      c.floaters.push({ x: rx, y: ry - 20, text: `⚔️ -${fmt(pvpDmg)}`, color: '#fb7185', life: 0.75 });
-                      if (c.sendPvpHit) c.sendPvpHit(rp.uid, pvpDmg);
+                      const markMult = (c.pvpMarkedTargetUid === rp.uid && now < (c.pvpMarkedTargetUntil || 0)) ? 1.15 : 1.0;
+                      const finalPvpLaserDmg = Math.floor(pvpDmg * markMult);
+                      c.floaters.push({ x: rx, y: ry - 20, text: `⚔️ -${fmt(finalPvpLaserDmg)}`, color: '#fb7185', life: 0.75 });
+                      if (c.sendPvpHit) c.sendPvpHit(rp.uid, finalPvpLaserDmg);
                     }
+                  }
+                  // PvP Auto-Rocket
+                  if (distPvp <= 185 && curStats.hasAutoRocket && now - (c.lastPvpRocketShot || 0) >= 1000) {
+                    const rktOrder = st.selectedRocket === 'ubr100' ? ['ubr100', 'hstrm01', 'plt2026'] : st.selectedRocket === 'hstrm01' ? ['hstrm01', 'plt2026'] : ['plt2026'];
+                    const chosenRkt = rktOrder.find(id => (st.ammo?.[id] || 0) > 0);
+                    if (chosenRkt) {
+                      c.lastPvpRocketShot = now;
+                      const rObj = ROCKET_TYPES.find(r => r.id === chosenRkt) || ROCKET_TYPES[0];
+                      setState(prev => ({ ...prev, selectedRocket: chosenRkt, ammo: { ...prev.ammo, [chosenRkt]: Math.max(0, (prev.ammo?.[chosenRkt] || 0) - 1) } }));
+                      const rPvpDmg = Math.floor((rObj.baseDmg || 1000) * (curStats.rocketMult || 1) * (0.94 + Math.random() * 0.12));
+                      c.projectiles.push({ x: pX + 8, y: pY - 8, tx: rx, ty: ry, progress: 0, color: rObj.color, dmg: 0, fromPlayer: false, isVisualOnly: true, isRocket: true, arcDir: 1, curveAmp: 40 });
+                      c.floaters.push({ x: rx + 10, y: ry - 28, text: `🚀 -${fmt(rPvpDmg)}`, color: '#fb923c', life: 0.8 });
+                      if (c.sendPvpHit) c.sendPvpHit(rp.uid, rPvpDmg);
+                    }
+                  }
+                  // PvP Auto-Launcher Salvo
+                  const pvpLch = curStats.equippedLauncher;
+                  if (distPvp <= 185 && pvpLch && curStats.hasAutoLauncher && now - (c.lastPvpLauncherShot || 0) >= pvpLch.cooldownSec * 1000) {
+                    const lOrder = st.selectedLauncherAmmo === 'hstrm_salvo' ? ['hstrm_salvo', 'eco10'] : ['eco10', 'hstrm_salvo'];
+                    const chosenLA = lOrder.find(id => (st.ammo?.[id] || 0) > 0);
+                    if (chosenLA) {
+                      const fCount = Math.min(pvpLch.salvoCount, st.ammo?.[chosenLA] || 0);
+                      if (fCount > 0) {
+                        c.lastPvpLauncherShot = now;
+                        const laObj = LAUNCHER_AMMO_TYPES.find(a => a.id === chosenLA) || LAUNCHER_AMMO_TYPES[0];
+                        setState(prev => ({ ...prev, selectedLauncherAmmo: chosenLA, ammo: { ...prev.ammo, [chosenLA]: Math.max(0, (prev.ammo?.[chosenLA] || 0) - fCount) } }));
+                        const salvoPvpDmg = Math.floor(laObj.baseDmg * fCount * (curStats.rocketMult || 1) * (0.94 + Math.random() * 0.12));
+                        c.projectiles.push({ x: pX + 8, y: pY - 8, tx: rx, ty: ry, progress: 0, color: laObj.color, dmg: 0, fromPlayer: false, isVisualOnly: true, isRocket: true, arcDir: -1, curveAmp: 52 });
+                        c.floaters.push({ x: rx - 10, y: ry - 32, text: `🔥 -${fmt(salvoPvpDmg)}`, color: '#c084fc', life: 0.85 });
+                        if (c.sendPvpHit) c.sendPvpHit(rp.uid, salvoPvpDmg);
+                      }
+                    }
+                  }
+                  // PvP A.I.D. M-Sentinel Guard Fire
+                  if (distPvp <= 195 && curStats.petStats?.active && curStats.petStats?.hasPetGuard && now - (c.lastPvpPetShot || 0) > 1150) {
+                    c.lastPvpPetShot = now;
+                    const petPvpDmg = Math.max(40, Math.floor(curStats.petStats.dmg * (0.9 + Math.random() * 0.2)));
+                    c.projectiles.push({ x: (c.livePetX ?? pX) + 6, y: (c.livePetY ?? pY) - 6, tx: rx, ty: ry, progress: 0, color: '#fb923c', dmg: 0, fromPlayer: false, isVisualOnly: true });
+                    if (c.sendPvpHit) c.sendPvpHit(rp.uid, petPvpDmg);
                   }
                 }
 
@@ -10154,7 +10277,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           if (combatRef.current.activeBootyUnlock && !shipDestroyed) {
             return notify('⏳ Wait for the Booty Box collection (5.0s) to finish before jumping!');
           }
-          if ((state.autoHunt || finishingTarget || manualEngage) && !shipDestroyed) {
+          if ((finishingTarget || manualEngage) && !shipDestroyed) {
             return notify(
               finishingTarget
                 ? '⏳ Finish eliminating the current target before jumping!'
@@ -10237,7 +10360,6 @@ const { useState, useEffect, useRef, useMemo } = React;
         setState(prev => ({
           ...prev,
           sectorId: targetSec.id,
-          autoHunt: allowAdminJump ? prev.autoHunt : false,
           activeGate: allowAdminJump ? null : prev.activeGate
         }));
         const isInvadingEnemy = isEnemyUpperMap(targetSec.id, state.companyId);
@@ -10520,7 +10642,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         const zeroGateCd = Boolean(stateRef.current?.activeShipId === 'sovereign_admin' && stateRef.current?.adminUnlocked && stateRef.current?.adminOverdrive);
         nextWarpAtRef.current = zeroGateCd ? performance.now() : performance.now() + 3000;
         setWarpCooldownSec(zeroGateCd ? 0 : 5);
-        setState(prev => ({ ...prev, activeGate: null, autoHunt: false }));
+        setState(prev => ({ ...prev, activeGate: null }));
         notify('🌀 Exited the Astral Gate and returned to Main Base.');
       };
 
@@ -10556,8 +10678,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           const nextKronos = Math.min(21, curKronos + addKronos);
           return {
             ...prev,
-            autoHunt: false,
-            credits: prev.credits + (rew.credits || 0),
+                  credits: prev.credits + (rew.credits || 0),
             uridium: prev.uridium + (rew.uridium || 0),
             xp: prev.xp + (rew.xp || 0),
             honor: prev.honor + (rew.honor || 0),
@@ -11070,7 +11191,8 @@ const { useState, useEffect, useRef, useMemo } = React;
 
       const fireRocket = () => {
         if (shipDestroyed) return notify('Repair your ship first!');
-        if (!combatRef.current.enemy) return notify('Niciun NPC selectat pe hartă!');
+        const pvpTargetForRkt = combatRef.current.targetPvpUid ? remotePlayersRef.current[combatRef.current.targetPvpUid] : null;
+        if (!combatRef.current.enemy && !pvpTargetForRkt) return notify('Niciun NPC sau pilot rival selectat pe hartă!');
         const nowPerf = performance.now();
         const remRktMs = combatRef.current.lastRocketShot ? (combatRef.current.lastRocketShot + 1000 - nowPerf) : 0;
         if (remRktMs > 0) {
@@ -11101,8 +11223,8 @@ const { useState, useEffect, useRef, useMemo } = React;
 
         const pX = c.liveShipX ?? 235;
         const pY = c.liveShipY ?? Math.round((c.viewH || 800) * 0.48);
-        const eX = c.enemy?.x ?? c.liveEnemyX ?? pX;
-        const eY = c.enemy?.y ?? c.liveEnemyY ?? pY - 80;
+        const eX = pvpTargetForRkt ? (pvpTargetForRkt.renderX ?? pvpTargetForRkt.targetX) : (c.enemy?.x ?? c.liveEnemyX ?? pX);
+        const eY = pvpTargetForRkt ? (pvpTargetForRkt.renderY ?? pvpTargetForRkt.targetY) : (c.enemy?.y ?? c.liveEnemyY ?? pY - 80);
 
         setState(p => ({
           ...p,
@@ -11114,8 +11236,9 @@ const { useState, useEffect, useRef, useMemo } = React;
         c.projectiles.push({
           x: pX + 8, y: pY - 8, tx: eX, ty: eY, progress: 0,
           color: rktObj.color,
-          dmg: rDmg,
-          fromPlayer: true,
+          dmg: pvpTargetForRkt ? 0 : rDmg,
+          fromPlayer: !pvpTargetForRkt,
+          isVisualOnly: Boolean(pvpTargetForRkt),
           isRocket: true,
           isCrit: isManualRktCrit,
           isPlasmaTrail: Boolean(stats.hasPlasmaRockets),
@@ -11125,6 +11248,10 @@ const { useState, useEffect, useRef, useMemo } = React;
           oscFreq: 9,
           oscAmp: 4
         });
+        if (pvpTargetForRkt && c.sendPvpHit) {
+          c.sendPvpHit(pvpTargetForRkt.uid, rDmg);
+          c.floaters.push({ x: eX, y: eY - 24, text: `🚀 -${fmt(rDmg)}`, color: '#fb923c', life: 0.85 });
+        }
         notify(`🚀 Rocket ${rktObj.label} lansată (${fmt(rDmg)} DMG)!`);
       };
 
@@ -11132,7 +11259,8 @@ const { useState, useEffect, useRef, useMemo } = React;
         if (shipDestroyed) return notify('Repair your ship first!');
         const lchObj = stats.equippedLauncher;
         if (!lchObj) return notify('Equip un Lansator de Rockets în Equip → Ship!');
-        if (!combatRef.current.enemy) return notify('Niciun NPC selectat pe hartă!');
+        const pvpTargetForLch = combatRef.current.targetPvpUid ? remotePlayersRef.current[combatRef.current.targetPvpUid] : null;
+        if (!combatRef.current.enemy && !pvpTargetForLch) return notify('Niciun NPC sau pilot rival selectat pe hartă!');
 
         const nowPerf = performance.now();
         const cdMs = lchObj.cooldownSec * 1000;
@@ -11157,8 +11285,8 @@ const { useState, useEffect, useRef, useMemo } = React;
 
         const pX = c.liveShipX ?? 235;
         const pY = c.liveShipY ?? Math.round((c.viewH || 800) * 0.48);
-        const eX = c.enemy?.x ?? c.liveEnemyX ?? pX;
-        const eY = c.enemy?.y ?? c.liveEnemyY ?? pY - 80;
+        const eX = pvpTargetForLch ? (pvpTargetForLch.renderX ?? pvpTargetForLch.targetX) : (c.enemy?.x ?? c.liveEnemyX ?? pX);
+        const eY = pvpTargetForLch ? (pvpTargetForLch.renderY ?? pvpTargetForLch.targetY) : (c.enemy?.y ?? c.liveEnemyY ?? pY - 80);
 
         setState(prev => ({
           ...prev,
@@ -11196,6 +11324,10 @@ const { useState, useEffect, useRef, useMemo } = React;
           });
         });
 
+        if (pvpTargetForLch && c.sendPvpHit) {
+          c.sendPvpHit(pvpTargetForLch.uid, totalSalvoDmg);
+          c.floaters.push({ x: eX, y: eY - 28, text: `🔥 -${fmt(totalSalvoDmg)}`, color: '#c084fc', life: 0.9 });
+        }
         notify(`🔥 Salvă ${lchObj.name.split(' ')[0]} (${fireCount}x ${lAmmoObj.label}): ${fmt(totalSalvoDmg)} DMG!`);
       };
 
@@ -11269,22 +11401,44 @@ const { useState, useEffect, useRef, useMemo } = React;
           c.floaters.push({ x: pX, y: pY - 26, text: '👻 TOTAL CLOAK (10s)', color: '#d8b4fe', life: 0.9 });
           notify('👻 Fantom Total Cloak ACTIV: 100% invizibil (10s)!');
         } else if (sk.id === 'ft_jam_x') {
-          if (!c.enemy || c.enemy.hp <= 0) return notify('Selectează mai întâi o țintă pentru JAM-X!');
+          const pvpT = c.targetPvpUid ? remotePlayersRef.current[c.targetPvpUid] : null;
+          if ((!c.enemy || c.enemy.hp <= 0) && !pvpT) return notify('Selectează mai întâi o țintă pentru JAM-X!');
           c.shipSkillLastUsed[sk.id] = nowPerf;
           c.shipSkillActiveUntil[sk.id] = nowPerf + sk.durSec * 1000;
-          c.enemyStunUntil = Math.max(c.enemyStunUntil || 0, nowPerf + sk.durSec * 1000);
-          c.enemy.aggroed = false;
-          c.shockwaves.push({ x: eX, y: eY, r: 12, maxR: 72, color: '#facc15', alpha: 0.95 });
-          c.floaters.push({ x: eX, y: eY - 26, text: '⚡ JAM-X LOCK BROKEN (5s)', color: '#fde047', life: 0.9 });
-          notify(`⚡ JAM-X activat: Sistemele ${c.enemy.name} blocate 5s!`);
+          if (pvpT) {
+            const pxR = pvpT.renderX ?? pvpT.targetX;
+            const pyR = pvpT.renderY ?? pvpT.targetY;
+            if (c.sendPvpHit) c.sendPvpHit(pvpT.uid, 0, { jamSec: sk.durSec });
+            c.shockwaves.push({ x: pxR, y: pyR, r: 12, maxR: 72, color: '#facc15', alpha: 0.95 });
+            c.floaters.push({ x: pxR, y: pyR - 26, text: '⚡ JAM-X LOCK BROKEN (5s)', color: '#fde047', life: 0.9 });
+            notify(`⚡ JAM-X PvP activat pe ${pvpT.name} (5s)!`);
+          } else {
+            c.enemyStunUntil = Math.max(c.enemyStunUntil || 0, nowPerf + sk.durSec * 1000);
+            c.enemy.aggroed = false;
+            c.shockwaves.push({ x: eX, y: eY, r: 12, maxR: 72, color: '#facc15', alpha: 0.95 });
+            c.floaters.push({ x: eX, y: eY - 26, text: '⚡ JAM-X LOCK BROKEN (5s)', color: '#fde047', life: 0.9 });
+            notify(`⚡ JAM-X activat: Sistemele ${c.enemy.name} blocate 5s!`);
+          }
         } else if (sk.id === 'ft_target_mark') {
-          if (!c.enemy || c.enemy.hp <= 0) return notify('Selectează mai întâi o țintă pentru Target Mark!');
+          const pvpT = c.targetPvpUid ? remotePlayersRef.current[c.targetPvpUid] : null;
+          if ((!c.enemy || c.enemy.hp <= 0) && !pvpT) return notify('Selectează mai întâi o țintă pentru Target Mark!');
           c.shipSkillLastUsed[sk.id] = nowPerf;
           c.shipSkillActiveUntil[sk.id] = nowPerf + sk.durSec * 1000;
-          c.enemy.markedUntil = nowPerf + sk.durSec * 1000;
-          c.shockwaves.push({ x: eX, y: eY, r: 14, maxR: 68, color: '#ef4444', alpha: 0.95 });
-          c.floaters.push({ x: eX, y: eY - 26, text: '🎯 MARKED (+15% DMG)', color: '#fca5a5', life: 0.9 });
-          notify(`🎯 Target Mark pe ${c.enemy.name}: +15% Damage timp de 10s!`);
+          if (pvpT) {
+            const pxR = pvpT.renderX ?? pvpT.targetX;
+            const pyR = pvpT.renderY ?? pvpT.targetY;
+            c.pvpMarkedTargetUid = pvpT.uid;
+            c.pvpMarkedTargetUntil = nowPerf + sk.durSec * 1000;
+            if (c.sendPvpHit) c.sendPvpHit(pvpT.uid, 0, { markSec: sk.durSec });
+            c.shockwaves.push({ x: pxR, y: pyR, r: 14, maxR: 68, color: '#ef4444', alpha: 0.95 });
+            c.floaters.push({ x: pxR, y: pyR - 26, text: '🎯 MARKED (+15% DMG)', color: '#fca5a5', life: 0.9 });
+            notify(`🎯 Target Mark PvP pe ${pvpT.name}: +15% Damage timp de 10s!`);
+          } else {
+            c.enemy.markedUntil = nowPerf + sk.durSec * 1000;
+            c.shockwaves.push({ x: eX, y: eY, r: 14, maxR: 68, color: '#ef4444', alpha: 0.95 });
+            c.floaters.push({ x: eX, y: eY - 26, text: '🎯 MARKED (+15% DMG)', color: '#fca5a5', life: 0.9 });
+            notify(`🎯 Target Mark pe ${c.enemy.name}: +15% Damage timp de 10s!`);
+          }
         } else if (sk.id === 'tt_draw_fire') {
           c.shipSkillLastUsed[sk.id] = nowPerf;
           c.shipSkillActiveUntil[sk.id] = nowPerf + sk.durSec * 1000;
@@ -11477,7 +11631,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           return notify('🔧 Nu ai modul de reparații! Mergi în Main Map (🏠) pentru autoreparare automată (10s) sau echipează SHR-1..4.');
         }
         const c = combatRef.current;
-        const isCurrentlyEngaged = Boolean(c.enemy) && (state.autoHunt || finishingTarget || manualEngage);
+        const isCurrentlyEngaged = Boolean(c.enemy) && (finishingTarget || manualEngage);
         if (isCurrentlyEngaged) {
           return notify('🔒 Robotul de reparație poate fi pornit doar în afara luptei!');
         }
@@ -12630,8 +12784,11 @@ const { useState, useEffect, useRef, useMemo } = React;
 
       const topClansList = useMemo(() => {
         const map = new Map();
-        (state.clansDirectory || []).forEach(c => {
+        (serverClansList || []).forEach(c => {
           if (c && c.id) map.set(c.id, c);
+        });
+        (state.clansDirectory || []).forEach(c => {
+          if (c && c.id && !map.has(c.id)) map.set(c.id, c);
         });
         if (state.clan && state.clan.id) {
           map.set(state.clan.id, state.clan);
@@ -12652,7 +12809,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             };
           })
           .sort((a, b) => b.clanScore - a.clanScore);
-      }, [state.clansDirectory, state.clan, state.pilotId, playerScore]);
+      }, [serverClansList, state.clansDirectory, state.clan, state.pilotId, playerScore]);
 
       const shopCatalog = useMemo(() => {
         if (shopCat === 'Droness') {
@@ -14811,6 +14968,8 @@ const { useState, useEffect, useRef, useMemo } = React;
                                         if (!error) {
                                           if (isSelf) {
                                             setState(p => ({ ...p, credits: p.credits + addCr, uridium: p.uridium + addAst }));
+                                          } else if (combatRef.current.sendAdminGift) {
+                                            combatRef.current.sendAdminGift(pl.id, addCr, addAst);
                                           }
                                           notify(`🎁 Trimis +${fmt(addCr)} CR & +${fmt(addAst)} AST către ${pl.pilot_name}!`);
                                           fetchAllPlayersForAdmin();
@@ -15631,12 +15790,45 @@ const { useState, useEffect, useRef, useMemo } = React;
                 return c.name.toLowerCase().includes(q) || c.tag.toLowerCase().includes(q);
               });
 
+              const persistClanToCloud = async (clanObj, deleteId = null) => {
+                if (!supabaseClient || !authSession?.user?.id) return;
+                try {
+                  if (deleteId) {
+                    await supabaseClient.from('clans').delete().eq('id', deleteId);
+                    setServerClansList(prev => prev.filter(x => x.id !== deleteId));
+                    return;
+                  }
+                  if (!clanObj) return;
+                  const row = {
+                    id: clanObj.id,
+                    name: clanObj.name,
+                    tag: clanObj.tag,
+                    description: clanObj.desc || '',
+                    recruit_mode: clanObj.recruitMode === 'request' ? 'request' : 'open',
+                    company_tag: clanObj.companyTag || null,
+                    leader_pilot_id: (clanObj.members || []).find(m => m.role === 'leader')?.pilotId || state.pilotId,
+                    treasury_cr: Math.max(0, Math.floor(Number(clanObj.treasuryCr) || 0)),
+                    treasury_ast: Math.max(0, Math.floor(Number(clanObj.treasuryAst) || 0)),
+                    members: clanObj.members || [],
+                    join_requests: clanObj.joinRequests || [],
+                    logs: (clanObj.logs || []).slice(0, 20),
+                    updated_at: new Date().toISOString(),
+                  };
+                  await supabaseClient.from('clans').upsert(row, { onConflict: 'id' });
+                  setServerClansList(prev => {
+                    const exists = prev.some(x => x.id === clanObj.id);
+                    return exists ? prev.map(x => x.id === clanObj.id ? clanObj : x) : [clanObj, ...prev];
+                  });
+                } catch (err) {}
+              };
+
               const updateClanBoth = (updaterFn) => {
                 setState(prev => {
                   if (!prev.clan) return prev;
                   const updated = updaterFn(prev.clan);
                   const nextDir = (prev.clansDirectory || []).map(c => c.id === updated.id ? updated : c);
                   if (!nextDir.some(c => c.id === updated.id)) nextDir.push(updated);
+                  persistClanToCloud(updated);
                   return { ...prev, clan: updated, clansDirectory: nextDir };
                 });
               };
@@ -15758,10 +15950,12 @@ const { useState, useEffect, useRef, useMemo } = React;
                                   let nextDir = prev.clansDirectory || [];
                                   if (remaining.length === 0) {
                                     nextDir = nextDir.filter(c => c.id !== prev.clan.id);
+                                    persistClanToCloud(null, prev.clan.id);
                                   } else {
                                     const promoted = remaining.map((m, idx) => idx === 0 && !remaining.some(x => x.role === 'leader') ? { ...m, role: 'leader' } : m);
-                                    const updatedClan = { ...prev.clan, members: promoted };
+                                    const updatedClan = { ...prev.clan, members: promoted, logs: [`${prev.playerName} a părăsit clanul.`, ...(prev.clan.logs || [])].slice(0, 20) };
                                     nextDir = nextDir.map(c => c.id === updatedClan.id ? updatedClan : c);
+                                    persistClanToCloud(updatedClan);
                                   }
                                   return { ...prev, clan: null, clansDirectory: nextDir };
                                 });
@@ -15907,6 +16101,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                       logs: [`${prev.playerName} a donat +${fmt(amt)} CR`, ...(prev.clan.logs || [])].slice(0, 20)
                                     };
                                     const nextDir = (prev.clansDirectory || []).map(c => c.id === updated.id ? updated : c);
+                                    persistClanToCloud(updated);
                                     return { ...prev, credits: prev.credits - amt, clan: updated, clansDirectory: nextDir };
                                   });
                                   notify(`🛡️ Ai donat +${fmt(amt)} CR în trezoreria clanului!`);
@@ -15948,6 +16143,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                       logs: [`${prev.playerName} a donat +${fmt(amt)} AST`, ...(prev.clan.logs || [])].slice(0, 20)
                                     };
                                     const nextDir = (prev.clansDirectory || []).map(c => c.id === updated.id ? updated : c);
+                                    persistClanToCloud(updated);
                                     return { ...prev, uridium: prev.uridium - amt, clan: updated, clansDirectory: nextDir };
                                   });
                                   notify(`🛡️ Ai donat +${fmt(amt)} AST în trezoreria clanului!`);
@@ -16012,7 +16208,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                   if (cleanName.length < 3) return notify('Numele clanului trebuie să aibă minim 3 caractere!');
                                   if (cleanTag.length < 2 || cleanTag.length > 5) return notify('Tag-ul clanului trebuie să aibă 2–5 caractere!');
                                   if (state.credits < CLAN_CREATE_COST_CR) return notify(`Ai nevoie de ${fmt(CLAN_CREATE_COST_CR)} CR!`);
-                                  if ((state.clansDirectory || []).some(c => c.tag === cleanTag)) return notify('Acest TAG este deja folosit!');
+                                  if (topClansList.some(c => c.tag === cleanTag)) return notify('Acest TAG este deja folosit pe server!');
                                   const newClan = {
                                     id: 'CLAN-' + String(Math.floor(100000 + Math.random() * 900000)),
                                     name: cleanName,
@@ -16037,6 +16233,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                     joinRequests: [],
                                     logs: [`Clanul [${cleanTag}] ${cleanName} a fost fondat de ${state.playerName || 'SilvPas'}.`]
                                   };
+                                  persistClanToCloud(newClan);
                                   setState(prev => ({
                                     ...prev,
                                     credits: prev.credits - CLAN_CREATE_COST_CR,
@@ -16098,6 +16295,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                         members: [...(cl.members || []), joinedMember],
                                         logs: [`${state.playerName || 'SilvPas'} s-a alăturat clanului.`, ...(cl.logs || [])].slice(0, 20)
                                       };
+                                      persistClanToCloud(updatedClan);
                                       setState(prev => ({
                                         ...prev,
                                         clan: updatedClan,
@@ -18224,7 +18422,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                       const activeLauncherAmmo = LAUNCHER_AMMO_TYPES.find(a => a.id === state.selectedLauncherAmmo) || LAUNCHER_AMMO_TYPES[0];
                       const activeFormation = FORMATIONS.find(f => f.id === state.droneFormation) || FORMATIONS[0];
                       const lchObj = stats.equippedLauncher;
-                      const isInCombatNow = Boolean(hudSnapshot.enemyName) && (state.autoHunt || finishingTarget || manualEngage);
+                      const isInCombatNow = Boolean(hudSnapshot.enemyName) && (finishingTarget || manualEngage);
 
                       const renderPinHeaderBanner = () => (
                         <div className="flex items-center justify-between gap-1">
@@ -18433,7 +18631,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                       const nextCollect = !p.autoCollect;
                                       const nextPetActive = nextCollect ? true : p.pet?.active;
                                       notify(nextCollect ? `📦 ${p.petName || 'A.I.D.'} COLLECT ON!` : `📦 ${p.petName || 'A.I.D.'} COLLECT OFF.`);
-                                      return { ...p, autoCollect: nextCollect, comboHuntCollect: false, pet: { ...p.pet, active: nextPetActive } };
+                                      return { ...p, autoCollect: nextCollect, pet: { ...p.pet, active: nextPetActive } };
                                     });
                                   }}
                                   className={`py-1 px-1.5 rounded-md text-[8px] font-black ${
@@ -19180,7 +19378,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                     {/* UNIFORM +20% ENLARGED 10-SLOT QUICKBAR (Exact same tile size as EDIT palette + Custom SVGs) + BOTTOM HP / SHD / CARGO BAR */}
                     {(() => {
                       const lchObj = stats.equippedLauncher;
-                      const isInCombatNow = Boolean(hudSnapshot.enemyName) && (state.autoHunt || finishingTarget || manualEngage);
+                      const isInCombatNow = Boolean(hudSnapshot.enemyName) && (finishingTarget || manualEngage);
                       const slotsArr = Array.isArray(state.quickSlots) && state.quickSlots.length === 10
                         ? state.quickSlots
                         : DEFAULT_STATE.quickSlots;
@@ -19505,7 +19703,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                         </div>
                         <button
                           onClick={() => {
-                            if ((state.autoHunt || finishingTarget || manualEngage) && !shipDestroyed) {
+                            if ((finishingTarget || manualEngage) && !shipDestroyed) {
                               return notify('⏳ Wait for the current battle to finish!');
                             }
                             if (state.activeGate) {
