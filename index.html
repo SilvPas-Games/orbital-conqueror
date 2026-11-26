@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.39.1 (Live Space Multiplayer & Fantom-Only Cloak)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.39.2 (Sector Multiplayer Visibility & Balanced Drone UI)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.39.1',
+      version: '1.39.2',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.39.1',
+        version: '1.39.2',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -2902,7 +2902,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       );
     }
 
-    function DronesSVG({ color = '#ffffff', size = 15, droneType = null, droneLvl = 1, coverId = null }) {
+    function DronesSVG({ color = '#ffffff', size = 24, droneType = null, droneLvl = 1, coverId = null }) {
       const [imgFailed, setImgFailed] = useState(false);
       const spriteKey = (droneType || coverId) ? getDroneSpriteKey(droneType || 'iris', droneLvl, coverId) : null;
       const spriteSrc = spriteKey ? (DRONE_SPRITES_3D[spriteKey] || DRONE_SPRITES_3D.vesper_lvl1) : null;
@@ -2914,9 +2914,9 @@ const { useState, useEffect, useRef, useMemo } = React;
           coverId === 'cov_havoc' ? '#ef4444' :
           coverId === 'cov_hercules' ? '#38bdf8' :
           coverId === 'cov_spartan' ? '#facc15' :
-          droneType === 'zeus' ? '#991b1b' :
-          droneType === 'apis' ? '#1e3a8a' :
-          droneType === 'iris' ? '#64748b' : '#cbd5e1';
+          droneType === 'zeus' ? '#b91c1c' :
+          droneType === 'apis' ? '#2563eb' :
+          droneType === 'iris' ? '#94a3b8' : '#e2e8f0';
         const eyeCol =
           coverId === 'cov_hercules' || droneType === 'apis' || droneType === 'flax' ? '#38bdf8' :
           coverId === 'cov_spartan' ? '#fde047' : '#f43f5e';
@@ -2925,7 +2925,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             {isCover && (
               <path d="M-8,-6 C-11,-1 -11,4 -6,8 M8,-6 C11,-1 11,4 6,8" fill="none" stroke={hullPrimary} strokeWidth="2.2" strokeLinecap="round" />
             )}
-            <polygon points="0,-10 -8.5,7.5 0,4.2 8.5,7.5" fill={hullPrimary} stroke="#e2e8f0" strokeWidth="0.7" strokeLinejoin="round" />
+            <polygon points="0,-10 -8.5,7.5 0,4.2 8.5,7.5" fill={hullPrimary} stroke="#f8fafc" strokeWidth="0.7" strokeLinejoin="round" />
             <polygon points="0,-10 0,4.2 8.5,7.5" fill="#020617" fillOpacity="0.32" />
             <circle cx="-2.4" cy="-3.5" r="1.25" fill={eyeCol} />
             <circle cx="2.4" cy="-3.5" r="1.25" fill={eyeCol} />
@@ -2934,10 +2934,10 @@ const { useState, useEffect, useRef, useMemo } = React;
       }
 
       const coverGlow =
-        coverId === 'cov_havoc' ? 'drop-shadow(0 0 6px rgba(239,68,68,0.95)) brightness(1.12)' :
-        coverId === 'cov_hercules' ? 'drop-shadow(0 0 6px rgba(56,189,248,0.95)) brightness(1.12)' :
-        coverId === 'cov_spartan' ? 'drop-shadow(0 0 6px rgba(250,204,21,0.95)) brightness(1.12)' :
-        'drop-shadow(0 2px 5px rgba(2,6,23,0.92)) brightness(1.14) contrast(1.08)';
+        coverId === 'cov_havoc' ? 'drop-shadow(0 0 6px rgba(239,68,68,0.9)) brightness(1.15)' :
+        coverId === 'cov_hercules' ? 'drop-shadow(0 0 6px rgba(56,189,248,0.9)) brightness(1.15)' :
+        coverId === 'cov_spartan' ? 'drop-shadow(0 0 6px rgba(250,204,21,0.9)) brightness(1.15)' :
+        'drop-shadow(0 2px 5px rgba(2,6,23,0.92)) brightness(1.16) contrast(1.08)';
 
       return (
         <div
@@ -2949,7 +2949,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             alt={droneType || coverId || 'drone'}
             draggable={false}
             onError={() => setImgFailed(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            style={{ width: '90%', height: '90%', objectFit: 'contain', display: 'block' }}
           />
         </div>
       );
@@ -3454,6 +3454,13 @@ const { useState, useEffect, useRef, useMemo } = React;
     }
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
+      {
+        title: 'v1.39.2 • Sector Multiplayer Visibility Fix & Balanced Drone UI (Shop, Equip & Main Menu)',
+        items: [
+          'Fixed remote player rendering in Space by normalizing sector IDs (main <-> 1-1/2-1/3-1) inside the canvas loop, adding a 3D presence ring around other pilots, and showing Sector/Global online counts on the radar minimap.',
+          'Rebalanced drone visual proportions across Main Menu (centered fleet stage with bottom telemetry pills so drones never overlap the ship or pilot badge), Equip -> Drones (framed 24px slot icons and wider name/level bars), and Shop (42px contained 3D previews).'
+        ]
+      },
       {
         title: 'v1.39.1 • Fantom-Only Active Cloak & Instant Bidirectional Multiplayer Sync',
         items: [
@@ -5081,7 +5088,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                 renderHeading: prevEntry?.renderHeading ?? Number(latest.heading ?? 0),
                 lastSeenAt: performance.now(),
               };
-              if (latest.inSpace && latest.sectorId === mySec && !latest.isStealthed) {
+              if (latest.inSpace && resolvePortalTargetId(latest.sectorId || 'main', latest.companyId) === mySec && !latest.isStealthed) {
                 sameSectorList.push(remotePlayersRef.current[keyUid]);
               }
             });
@@ -5117,7 +5124,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             };
             const mySec = resolvePortalTargetId(stateRef.current.sectorId || 'main', stateRef.current.companyId);
             const inSec = Object.values(remotePlayersRef.current).filter(
-              rp => rp && rp.uid !== myUid && rp.inSpace && rp.sectorId === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 15000)
+              rp => rp && rp.uid !== myUid && rp.inSpace && resolvePortalTargetId(rp.sectorId || 'main', rp.companyId) === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 25000)
             );
             setOnlineSectorPilots(inSec);
             setOnlineGlobalCount(Math.max(1, Object.keys(remotePlayersRef.current).length + 1));
@@ -5135,7 +5142,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           channel.send({ type: 'broadcast', event: 'ship_move', payload: pkt });
           const mySec = resolvePortalTargetId(stateRef.current.sectorId || 'main', stateRef.current.companyId);
           const inSec = Object.values(remotePlayersRef.current).filter(
-            rp => rp && rp.uid !== myUid && rp.inSpace && rp.sectorId === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 15000)
+            rp => rp && rp.uid !== myUid && rp.inSpace && resolvePortalTargetId(rp.sectorId || 'main', rp.companyId) === mySec && !rp.isStealthed && (performance.now() - (rp.lastSeenAt || 0) < 25000)
           );
           setOnlineSectorPilots(inSec);
         }, 280);
@@ -9279,10 +9286,13 @@ const { useState, useEffect, useRef, useMemo } = React;
 
             // Render Live Multiplayer Pilots in the Same Sector
             const myResolvedSecCanvas = resolvePortalTargetId(st.sectorId || 'main', st.companyId);
+            const myCompObj = getCompanyById(st.companyId);
             if (!activeGateObj && remotePlayersRef.current) {
               Object.values(remotePlayersRef.current).forEach(rp => {
-                if (!rp || !rp.inSpace || rp.isStealthed || rp.sectorId !== myResolvedSecCanvas) return;
-                if (now - (rp.lastSeenAt || 0) > 15000) return;
+                if (!rp || !rp.inSpace || rp.isStealthed) return;
+                const rpSec = resolvePortalTargetId(rp.sectorId || 'main', rp.companyId);
+                if (rpSec !== myResolvedSecCanvas) return;
+                if (now - (rp.lastSeenAt || 0) > 25000) return;
 
                 // Smooth position & heading interpolation
                 rp.renderX = (rp.renderX ?? rp.targetX) + ((rp.targetX ?? rp.renderX) - (rp.renderX ?? rp.targetX)) * Math.min(1, dtSec * 10);
@@ -9333,6 +9343,21 @@ const { useState, useEffect, useRef, useMemo } = React;
                   });
                 }
 
+                const rComp = getCompanyById(rp.companyId);
+                const isHostile = Boolean(rComp && myCompObj && rComp.id !== myCompObj.id);
+                const ringCol = rp.isAdmin ? 'rgba(250, 204, 21, 0.65)' : isHostile ? 'rgba(244, 63, 94, 0.65)' : 'rgba(56, 189, 248, 0.58)';
+
+                // Subtle 3D Isometric Pilot Presence Ring under Remote Ship
+                ctx.save();
+                ctx.translate(rx, ry + 4);
+                ctx.scale(1, 0.56);
+                ctx.strokeStyle = ringCol;
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(0, 0, 27, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+
                 // Remote Warship Sprite
                 ctx.save();
                 ctx.translate(rx, ry);
@@ -9344,7 +9369,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                 if (rImg && rImg.complete && rImg.naturalWidth > 0) {
                   ctx.drawImage(rImg, -rDrawSize / 2, -rDrawSize / 2, rDrawSize, rDrawSize);
                 } else {
-                  ctx.fillStyle = '#38bdf8';
+                  ctx.fillStyle = isHostile ? '#fb7185' : '#38bdf8';
                   ctx.beginPath();
                   ctx.moveTo(0, -18);
                   ctx.lineTo(-14, 14);
@@ -9365,8 +9390,6 @@ const { useState, useEffect, useRef, useMemo } = React;
                 );
 
                 // Remote Pilot Name + Company Tag
-                const rComp = getCompanyById(rp.companyId);
-                const isHostile = Boolean(rComp && activeCompany && rComp.id !== activeCompany.id);
                 const rTagPrefix = rp.clanTag ? `[${rp.clanTag}] ` : '';
                 const rCompTag = rComp ? ` (${rComp.tag})` : '';
                 const rFullLabel = `${rTagPrefix}${rp.name || 'Pilot'}${rCompTag}`;
@@ -15926,7 +15949,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.39.1 (Live Space Multiplayer & Fantom-Only Cloak)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.39.2 (Sector Multiplayer Visibility & Balanced Drone UI)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
@@ -16655,50 +16678,24 @@ const { useState, useEffect, useRef, useMemo } = React;
                         </div>
                       </div>
 
-                      {/* Right/Center: Live Attack-Ready Fleet directly on Cosmic Background */}
-                      <div className="flex-1 h-48 relative flex items-center justify-center pointer-events-none">
-                        <div
-                          style={{ transform: 'rotate(18deg)' }}
-                          className="relative w-36 h-36 flex items-center justify-center mt-6 ml-6"
-                        >
+                      {/* Right/Center: Balanced Live Attack-Ready Fleet directly on Cosmic Background */}
+                      <div className="flex-1 h-52 relative flex flex-col items-center justify-center pointer-events-none">
+                        <div className="relative w-44 h-40 flex items-center justify-center">
                           {state.pet?.owned && (
                             <div
-                              style={{ transform: 'translate(-48px, -62px)' }}
+                              style={{ transform: 'translate(-56px, -44px)' }}
                               className={`absolute z-20 flex flex-col items-center justify-center ${!state.pet?.active ? 'opacity-45 grayscale' : ''}`}
                             >
-                              <div style={{ transform: 'rotate(30deg)' }} className="flex items-center justify-center">
-                                <PetSVG size={36} active={Boolean(state.pet?.active)} level={stats.petStats.lvl} />
-                              </div>
-                              <div
-                                style={{ transform: 'rotate(-18deg)' }}
-                                className="mt-0.5 w-20 text-center text-[8.5px] font-black text-orange-300 tracking-wide whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
-                              >
+                              <PetSVG size={32} active={Boolean(state.pet?.active)} level={stats.petStats.lvl} />
+                              <div className="mt-0.5 text-center text-[8px] font-black text-orange-300 tracking-wide whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">
                                 {state.petName || 'A.I.D.'}
                               </div>
                             </div>
                           )}
-                          <div className="relative z-10">
-                            <ShipSVG shipId={stats.ship.id} color={stats.activeDesign?.color || stats.ship.color} auraColor={stats.activeDesign?.color || null} size={64} />
+
+                          <div className="relative z-10 flex items-center justify-center">
+                            <ShipSVG shipId={stats.ship.id} color={stats.activeDesign?.color || stats.ship.color} auraColor={stats.activeDesign?.color || null} size={62} />
                           </div>
-                          {activeDronessList.length > 0 && (
-                            <div
-                              style={{ transform: 'translate(0px, 56px) rotate(-18deg)' }}
-                              className="absolute z-30 px-1.5 py-0.5 rounded bg-slate-950/75 border border-cyan-400/25 text-[7.5px] font-mono font-bold text-cyan-200 whitespace-nowrap"
-                            >
-                              {stats.form.label} ({activeDronessList.length})
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setShowProfileModal(true)}
-                            style={{ transform: 'translate(0px, 76px) rotate(-18deg)' }}
-                            className="pointer-events-auto absolute z-30 px-2 py-0.5 rounded-lg bg-slate-950/85 border border-amber-400/35 text-[7.5px] font-mono text-slate-100 flex items-center gap-1 whitespace-nowrap active:scale-95"
-                          >
-                            {state.clan && <span className="text-sky-300 font-black">[{state.clan.tag}]</span>}
-                            <span className="font-black text-amber-300">{state.playerName || 'SilvPas'}</span>
-                            <span className="text-cyan-300">#{state.pilotId}</span>
-                            {activeCompany && <span className="text-emerald-300 font-bold">({activeCompany.tag})</span>}
-                          </button>
 
                           {getMainMenuDronesOffsets(stats.form.id, activeDronessList.length).map((off, idx) => {
                             const dSlot = activeDronessList[idx];
@@ -16716,14 +16713,33 @@ const { useState, useEffect, useRef, useMemo } = React;
                               <div
                                 key={dSlot.slotIndex ?? idx}
                                 style={{
-                                  transform: `translate(${off.x}px, ${off.y}px)`,
+                                  transform: `translate(${Math.round(off.x * 0.92)}px, ${Math.round(off.y * 0.85)}px)`,
                                 }}
                                 className="absolute z-20 transition-transform duration-300"
                               >
-                                <DronesSVG color={dCol} size={28} droneType={dSlot.type} droneLvl={getDroneLevelInfo(dSlot.xp || 0).lvl} coverId={dCfgSlot.cover || null} />
+                                <DronesSVG color={dCol} size={23} droneType={dSlot.type} droneLvl={getDroneLevelInfo(dSlot.xp || 0).lvl} coverId={dCfgSlot.cover || null} />
                               </div>
                             );
                           })}
+                        </div>
+
+                        {/* Clean Bottom Fleet Telemetry Pills (Never overlapped by Drones) */}
+                        <div className="flex flex-col items-center gap-1 mt-0.5 z-30">
+                          {activeDronessList.length > 0 && (
+                            <div className="px-2 py-0.5 rounded-md bg-slate-950/80 border border-cyan-400/30 text-[7.5px] font-mono font-bold text-cyan-200 whitespace-nowrap">
+                              {stats.form.label} ({activeDronessList.length}/10) • +{fmt(stats.droneStats.totalDmg)} DMG
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setShowProfileModal(true)}
+                            className="pointer-events-auto px-2 py-0.5 rounded-lg bg-slate-950/85 border border-amber-400/35 text-[7.5px] font-mono text-slate-100 flex items-center gap-1 whitespace-nowrap active:scale-95"
+                          >
+                            {state.clan && <span className="text-sky-300 font-black">[{state.clan.tag}]</span>}
+                            <span className="font-black text-amber-300">{state.playerName || 'SilvPas'}</span>
+                            <span className="text-cyan-300">#{state.pilotId}</span>
+                            {activeCompany && <span className="text-emerald-300 font-bold">({activeCompany.tag})</span>}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -17265,7 +17281,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                           >
                             <div className="flex items-center justify-between px-0.5 pb-0.5 text-[7.5px] font-mono font-black drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
                               <span className="text-cyan-300">[{secCode}]</span>
-                              <span className="text-emerald-300">● {onlineGlobalCount}</span>
+                              <span className="text-emerald-300" title="Piloți în acest sector / Total online">● {onlineSectorPilots.length + 1}/{onlineGlobalCount}</span>
                               <span className="text-slate-300 group-hover:text-cyan-200">🗺️</span>
                             </div>
                             <svg width="115" height="76" viewBox={`0 0 ${mapW} ${mapH}`} preserveAspectRatio="none" className="rounded-md bg-[#030b1a]/45 overflow-hidden block">
@@ -19651,8 +19667,8 @@ const { useState, useEffect, useRef, useMemo } = React;
                     {equipSubTab === 'drones' ? (
                       /* DRONES TABLE: Subtle gap under Top Panel, all 10 drones descending cleanly */
                       <div className="mt-1.5 bg-slate-950/60 backdrop-blur-xs rounded-2xl p-2 space-y-1">
-                        <div className="grid grid-cols-[1fr_84px_84px_68px] gap-1.5 text-[8px] font-bold text-slate-400 px-1">
-                          <span>Drones</span>
+                        <div className="grid grid-cols-[1.22fr_76px_76px_74px] gap-1 text-[8px] font-bold text-slate-400 px-1">
+                          <span>Drones ({activeDronessList.length}/10)</span>
                           <span className="text-center">Lasers</span>
                           <span className="text-center">Generators</span>
                           <span className="text-center">Design</span>
@@ -19681,20 +19697,22 @@ const { useState, useEffect, useRef, useMemo } = React;
                               <div
                                 key={idx}
                                 onClick={() => setSelectedDrones(idx)}
-                                className={`grid grid-cols-[1fr_84px_84px_68px] gap-1.5 items-center rounded-lg px-1 py-0.5 cursor-pointer transition ${
+                                className={`grid grid-cols-[1.22fr_76px_76px_74px] gap-1 items-center rounded-lg px-1 py-0.5 cursor-pointer transition ${
                                   isSel
-                                    ? 'bg-cyan-500/20'
+                                    ? 'bg-cyan-500/20 border border-cyan-400/35'
                                     : unlocked
-                                    ? 'bg-slate-900/55 hover:bg-slate-900/80'
-                                    : 'bg-slate-900/25 opacity-55'
+                                    ? 'bg-slate-900/55 hover:bg-slate-900/80 border border-transparent'
+                                    : 'bg-slate-900/25 opacity-55 border border-transparent'
                                 }`}
                               >
-                                <div className="flex items-center gap-1 min-w-0">
-                                  {unlocked ? (
-                                    <DronesSVG color={droneIconColor} size={28} droneType={d.type} droneLvl={dLvlInfo.lvl} coverId={dCfg?.cover || null} />
-                                  ) : (
-                                    <span className="text-[8.5px] shrink-0">🔒</span>
-                                  )}
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <div className="w-6 h-6 rounded-md bg-slate-950/80 border border-white/5 flex items-center justify-center shrink-0">
+                                    {unlocked ? (
+                                      <DronesSVG color={droneIconColor} size={22} droneType={d.type} droneLvl={dLvlInfo.lvl} coverId={dCfg?.cover || null} />
+                                    ) : (
+                                      <span className="text-[8.5px]">🔒</span>
+                                    )}
+                                  </div>
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-1">
                                       <span className={`text-[8.5px] font-bold truncate ${isSel ? 'text-amber-300' : 'text-slate-100'}`}>
@@ -20488,7 +20506,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 ) : isDroneFormationEntry ? (
                                   <FormationIconSVG formationId={entry.formationId} color={entry.color} size={36} />
                                 ) : (
-                                  <DronesSVG color={dronePreviewColor} size={50} droneType={isCoverEntry ? "iris" : (entry.type?.replace("drone_", "") || "flax")} droneLvl={6} coverId={isCoverEntry ? entry.id : null} />
+                                  <DronesSVG color={dronePreviewColor} size={42} droneType={isCoverEntry ? "iris" : (entry.type?.replace("drone_", "") || "flax")} droneLvl={6} coverId={isCoverEntry ? entry.id : null} />
                                 )}
                               </div>
                             )}
