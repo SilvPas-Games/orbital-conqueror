@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.42 (Persistent Supabase Chat & Admin Chat Monitor)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.43 (PvP Kill Sync, Security Hardening & Clean Core)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -60,7 +60,7 @@ const { useState, useEffect, useRef, useMemo } = React;
 
 
     // ============================================================================
-    // CATALOG DATA (SilvPas Idle Games • Version 2.01 Remodificare — Orbital Conqueror)
+    // CATALOG DATA (SilvPas Idle Games • Version 1.43 — Orbital Conqueror)
     // ============================================================================
 
     const SHIP_SPRITES_3D = {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.42',
+      version: '1.43',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.42',
+        version: '1.43',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -2139,6 +2139,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           logs: Array.isArray(parsed.clan.logs) ? parsed.clan.logs.slice(0, 20) : [],
         } : null,
         clansDirectory: Array.isArray(parsed.clansDirectory) ? parsed.clansDirectory.filter(c => c && c.id && c.name && c.tag) : [],
+        adminUnlocked: false,
         activeShipId: safeShipId,
         unlockedShips: safeUnlocked,
         unlockedShipDesigns: Array.isArray(parsed.unlockedShipDesigns) ? parsed.unlockedShipDesigns.filter(id => SHIP_DESIGNS.some(d => d.id === id)) : [],
@@ -3455,6 +3456,15 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.43 • PvP Kill Rewards & Target Sync, Admin Role Hardening & Core Cleanup',
+        items: [
+          'Completed the live PvP combat loop: destroying a rival pilot now triggers a `pvp_kill` Realtime event that awards Honor, XP, Credits, and Astralite to the victor and cleanly clears the target lock.',
+          'Added laser ammo consumption (with automatic tier downgrade fallback) to PvP volleys and automatic target unlock when a rival warps out, cloaks, or enters a Safe Zone.',
+          'Hardened Admin security so `adminUnlocked` is never persisted in localStorage and is strictly verified from the Supabase server profile (`role === "admin"`).',
+          'Fixed the Admin Panel `Clear` chat query (`.gt("id", 0)`), removed dead Booty Box logic from A.I.D., and aligned version numbers across the app and changelog export (`v1.43`).'
+        ]
+      },
+      {
         title: 'v1.42 • Persistent Supabase Chat Storage (Table Editor) & Admin Chat Monitor',
         items: [
           'Connected Space Galaxy Chat directly to the Supabase `chat_messages` table so all messages persist across sessions, appear in Supabase Table Editor, and preload the latest 25 messages upon login.',
@@ -3797,7 +3807,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'CHANGELOG_v1.25.md';
+      a.download = 'CHANGELOG_v1.43.md';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -5239,7 +5249,53 @@ const { useState, useEffect, useRef, useMemo } = React;
               destroyedRef.current = true;
               setShipDestroyed(true);
               notify(`💥 Nava ta a fost distrusă în PvP de ${payload.attackerName || 'un pilot rival'}!`);
+              if (payload.attackerUid) {
+                channel.send({
+                  type: 'broadcast',
+                  event: 'pvp_kill',
+                  payload: {
+                    killerUid: payload.attackerUid,
+                    victimUid: myUid,
+                    victimName: stNow.playerName || 'Pilot',
+                    victimCompanyId: stNow.companyId || null,
+                    victimMaxHp: Math.max(3600, Math.floor(curSt.maxHp || 3600))
+                  }
+                });
+              }
             }
+          })
+          .on('broadcast', { event: 'pvp_kill' }, ({ payload }) => {
+            if (!payload || payload.killerUid !== myUid) return;
+            const c = combatRef.current;
+            const curSt = statsRef.current;
+            if (c && c.targetPvpUid === payload.victimUid) {
+              c.targetPvpUid = null;
+              setPvpTargetUid(null);
+              manualEngageRef.current = false;
+              setManualEngage(false);
+            }
+            const scaleHp = Math.max(1, (payload.victimMaxHp || 10000) / 10000);
+            const rewardHonor = Math.round(250 * Math.sqrt(scaleHp) * (curSt?.honorMult || 1));
+            const rewardXp = Math.round(5000 * Math.sqrt(scaleHp) * (curSt?.xpMult || 1));
+            const rewardCr = Math.round(15000 * Math.sqrt(scaleHp) * (curSt?.creditsMult || 1));
+            const rewardAst = Math.max(25, Math.round(35 * Math.sqrt(scaleHp) * (curSt?.uriMult || 1)));
+            setState(prev => ({
+              ...prev,
+              honor: (prev.honor || 0) + rewardHonor,
+              xp: (prev.xp || 0) + rewardXp,
+              credits: (prev.credits || 0) + rewardCr,
+              uridium: (prev.uridium || 0) + rewardAst,
+            }));
+            if (c) {
+              c.floaters.push({
+                x: (c.liveShipX || 310),
+                y: (c.liveShipY || 295) - 34,
+                text: `🏆 PvP KILL +${fmt(rewardHonor)} ONO | +${fmt(rewardAst)} AST`,
+                color: '#fde047',
+                life: 1.4
+              });
+            }
+            notify(`🏆 Victorie PvP împotriva ${payload.victimName || 'Pilot'}! +${fmt(rewardHonor)} Onoare, +${fmt(rewardAst)} AST!`);
           })
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
@@ -5818,6 +5874,26 @@ const { useState, useEffect, useRef, useMemo } = React;
           // 2. Pure Two-Tap Combat AI (Range = 165px across Space & Gates; Safe Zone clears red target & NPC aggro):
           const isFantomCloaked = Boolean(curStats.ship.id === 'fantom' && now < (c.shipSkillActiveUntil?.ft_total_cloak || 0));
           const isStealthNow = (curStats.ship.id === 'sovereign_admin' && st.adminUnlocked && st.adminStealth) || isFantomCloaked;
+          if (c.targetPvpUid) {
+            const pvpTargetObj = remotePlayersRef.current[c.targetPvpUid];
+            const mySecCheck = resolvePortalTargetId(st.sectorId || 'main', st.companyId);
+            const targetStillValid = Boolean(
+              pvpTargetObj &&
+              pvpTargetObj.inSpace &&
+              !pvpTargetObj.isStealthed &&
+              (pvpTargetObj.hp ?? 1) > 0 &&
+              resolvePortalTargetId(pvpTargetObj.sectorId || 'main', pvpTargetObj.companyId) === mySecCheck &&
+              (now - (pvpTargetObj.lastSeenAt || 0) < 12000)
+            );
+            if (!targetStillValid || isPlayerInSafeZone || isDestroyed || isStealthNow) {
+              c.targetPvpUid = null;
+              setPvpTargetUid(null);
+              if (!c.targetEnemyId && manualEngageRef.current) {
+                manualEngageRef.current = false;
+                setManualEngage(false);
+              }
+            }
+          }
           if ((isPlayerInSafeZone || isDestroyed || isStealthNow) && !activeGateObj) {
             if (c.targetEnemyId || c.enemy) {
               c.targetEnemyId = null;
@@ -6283,7 +6359,6 @@ const { useState, useEffect, useRef, useMemo } = React;
             return best;
           };
 
-          const targetBootyBox = null;
           const nearestPetBonusBox = !petCombatFocusActive ? findNearestInRange(c.bonusBoxes, PET_LOOT_RANGE) : null;
           const nearestShipBox = !c.targetBootyBoxId && c.bonusBoxes.length > 0 ? findNearestInRange(c.bonusBoxes, 9999) : null;
           const petTargetBox = nearestPetBonusBox;
@@ -6375,10 +6450,6 @@ const { useState, useEffect, useRef, useMemo } = React;
           if (curStats.ship.id === 'sovereign_admin' && st.adminUnlocked && st.adminOverdrive && c.bonusBoxes.length > 0) {
             const grabbed = c.bonusBoxes.shift();
             collectBonusBox(grabbed, 'Sovereign Overdrive');
-          } else if (petCanCollect && targetBootyBox && Math.hypot(petX - targetBootyBox.x, petY - targetBootyBox.y) < 16) {
-            if (!c.activeBootyUnlock) {
-              c.activeBootyUnlock = { boxId: targetBootyBox.id, startedAt: now, durationMs: 5000, collector: 'A.I.D.' };
-            }
           } else if (petCanCollect && nearestPetBonusBox && Math.hypot(petX - nearestPetBonusBox.x, petY - nearestPetBonusBox.y) < 14) {
             const bIdx = c.bonusBoxes.findIndex(b => b.id === nearestPetBonusBox.id);
             if (bIdx !== -1) c.bonusBoxes.splice(bIdx, 1);
@@ -9542,19 +9613,45 @@ const { useState, useEffect, useRef, useMemo } = React;
                 ctx.stroke();
                 ctx.restore();
 
-                // Active PvP Laser Volley against Locked Rival Pilot
+                // Active PvP Laser Volley against Locked Rival Pilot (consumes laser ammo + fallback)
                 if (isPvpSelected && isHostile && !isDestroyed && !isPlayerInSafeZone && manualEngageRef.current) {
                   const distPvp = Math.hypot(rx - pX, ry - pY);
                   if (distPvp <= 185 && now - (c.lastPvpShot || 0) >= (curStats.shotIntervalMs || 950)) {
-                    c.lastPvpShot = now;
-                    const pvpAmmoObj = AMMO_TYPES.find(a => a.id === (st.selectedAmmo || 'x1')) || AMMO_TYPES[0];
-                    const pvpDmg = Math.max(80, Math.floor(curStats.totalDmg * (pvpAmmoObj.mult || 1) * (0.9 + Math.random() * 0.2)));
-                    c.projectiles.push({
-                      x: pX + 8, y: pY - 8, tx: rx, ty: ry,
-                      progress: 0, color: pvpAmmoObj.color || '#ef4444', dmg: 0, fromPlayer: false, isVisualOnly: true
-                    });
-                    c.floaters.push({ x: rx, y: ry - 20, text: `⚔️ -${fmt(pvpDmg)}`, color: '#fb7185', life: 0.75 });
-                    if (c.sendPvpHit) c.sendPvpHit(rp.uid, pvpDmg);
+                    const pvpAmmoCost = Math.max(0, curStats.shipDroneLaserCount || 0);
+                    const pvpFallback =
+                      st.selectedAmmo === 'x4' ? ['x4', 'x3', 'x2', 'x1'] :
+                      st.selectedAmmo === 'x3' ? ['x3', 'x2', 'x1'] :
+                      st.selectedAmmo === 'x2' ? ['x2', 'x1'] :
+                      st.selectedAmmo === 'sab' ? ['sab', 'x1'] : ['x1'];
+                    let chosenPvpAmmo = pvpAmmoCost === 0 ? (st.selectedAmmo || 'x1') : null;
+                    if (pvpAmmoCost > 0) {
+                      for (const cid of pvpFallback) {
+                        if ((st.ammo?.[cid] || 0) >= 1) { chosenPvpAmmo = cid; break; }
+                      }
+                    }
+                    if (!chosenPvpAmmo) {
+                      if (now - (c.lastNoAmmoWarn || 0) > 3500) {
+                        c.lastNoAmmoWarn = now;
+                        c.floaters.push({ x: pX, y: pY - 26, text: '⚠️ OUT OF LASER AMMO!', color: '#f87171', life: 0.9 });
+                      }
+                    } else {
+                      c.lastPvpShot = now;
+                      const pvpAmmoObj = AMMO_TYPES.find(a => a.id === chosenPvpAmmo) || AMMO_TYPES[0];
+                      if (pvpAmmoCost > 0) {
+                        setState(prev => ({
+                          ...prev,
+                          selectedAmmo: chosenPvpAmmo,
+                          ammo: { ...prev.ammo, [chosenPvpAmmo]: Math.max(0, (prev.ammo?.[chosenPvpAmmo] || 0) - pvpAmmoCost) }
+                        }));
+                      }
+                      const pvpDmg = Math.max(80, Math.floor(curStats.totalDmg * (pvpAmmoObj.mult || 1) * (0.9 + Math.random() * 0.2)));
+                      c.projectiles.push({
+                        x: pX + 8, y: pY - 8, tx: rx, ty: ry,
+                        progress: 0, color: pvpAmmoObj.color || '#ef4444', dmg: 0, fromPlayer: false, isVisualOnly: true
+                      });
+                      c.floaters.push({ x: rx, y: ry - 20, text: `⚔️ -${fmt(pvpDmg)}`, color: '#fb7185', life: 0.75 });
+                      if (c.sendPvpHit) c.sendPvpHit(rp.uid, pvpDmg);
+                    }
                   }
                 }
 
@@ -14775,7 +14872,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                               type="button"
                               onClick={async () => {
                                 if (!supabaseClient) return;
-                                await supabaseClient.from('chat_messages').delete().neq('id', 0);
+                                await supabaseClient.from('chat_messages').delete().gt('id', 0);
                                 setAdminChatLogs([]);
                                 setSpaceChatMessages([]);
                                 notify('🧹 Istoricul chatului a fost șters din Supabase!');
