@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.37.1 (Drone Shop Fix & Server Maintenance)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.38 (Server Maintenance & Drone Evolution)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.37.1',
+      version: '1.38',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2074,7 +2074,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.37.1',
+        version: '1.38',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -3445,6 +3445,13 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.38 • Server Maintenance Mode (English) & Admin Live Testing Access',
+        items: [
+          'Added global Server Maintenance Mode controlled from Admin Command Center (MAINTENANCE: ON / OFF + custom maintenance notice).',
+          'Non-admin players see a clean Server Maintenance status screen with automatic 8-second status checks while their cloud save remains protected, whereas Admin accounts keep full access to test live updates.'
+        ]
+      },
+      {
         title: 'v1.37 • Drone Evolution System (Lvl 1–6), Redesigned Orion/Helios/Aether & Cover Designs',
         items: [
           'Introduced complete 6-Level progressive evolution (Lvl 1 Rookie -> Lvl 6 Apex) for Vesper, Orion, Helios, and Aether drones with 24 custom 3D progressive sprites and per-drone XP bars in Equip -> Drones.',
@@ -3842,14 +3849,14 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [authErrorMsg, setAuthErrorMsg] = useState('');
       const [authSubmitting, setAuthSubmitting] = useState(false);
       const [cloudSyncStatus, setCloudSyncStatus] = useState('offline'); // 'offline' | 'syncing' | 'synced' | 'error'
-      const [globalEvents, setGlobalEvents] = useState({ gold_booty_active: false, double_xp_active: false, announcement: '', maintenance_active: false, maintenance_message: 'Serverul este în mentenanță pentru un nou update. Revenim în curând!' });
+      const [globalEvents, setGlobalEvents] = useState({ gold_booty_active: false, double_xp_active: false, announcement: '', maintenance_active: false, maintenance_message: 'Server is currently under maintenance for a new update. We will be back online shortly!' });
       const [adminPlayersList, setAdminPlayersList] = useState([]);
       const [adminPlayersLoading, setAdminPlayersLoading] = useState(false);
       const [adminPlayerSearch, setAdminPlayerSearch] = useState('');
       const [adminGiftCr, setAdminGiftCr] = useState('100000');
       const [adminGiftAst, setAdminGiftAst] = useState('5000');
       const [adminAnnouncementInput, setAdminAnnouncementInput] = useState('');
-      const [adminMaintMsgInput, setAdminMaintMsgInput] = useState('Serverul este în mentenanță pentru un nou update. Revenim în curând!');
+      const [adminMaintMsgInput, setAdminMaintMsgInput] = useState('Server is currently under maintenance for a new update. We will be back online shortly!');
       const cloudReadyToSaveRef = useRef(false);
       const [toast, setToast] = useState(null);
       const [shipDestroyed, setShipDestroyed] = useState(false);
@@ -12342,12 +12349,12 @@ const { useState, useEffect, useRef, useMemo } = React;
             <div className="w-full max-w-[390px] bg-gradient-to-b from-[#170b18] to-[#030b17] border-2 border-amber-400/80 rounded-2xl p-5 space-y-3.5 text-center shadow-[0_0_40px_rgba(250,204,21,0.22)]">
               <div className="text-3xl">🛠️</div>
               <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">Orbital Conqueror • Server Status</div>
-              <div className="text-base font-black text-white uppercase">Mentenanță Server în Curs</div>
+              <div className="text-base font-black text-white uppercase">Server Maintenance in Progress</div>
               <div className="bg-slate-950/90 border border-amber-400/35 rounded-xl p-3 text-xs text-amber-100 leading-relaxed">
-                {globalEvents.maintenance_message || 'Serverul este în mentenanță pentru un nou update. Revenim în curând!'}
+                {globalEvents.maintenance_message || 'Server is currently under maintenance for a new update. We will be back online shortly!'}
               </div>
               <div className="text-[10px] text-slate-400">
-                Progresul contului tău este salvat în siguranță în cloud. Pagina se verifică automat la fiecare 8 secunde.
+                Your pilot progress is safely backed up in the cloud. Status checks automatically every 8 seconds.
               </div>
               <div className="flex gap-2 pt-1">
                 <button
@@ -12356,18 +12363,18 @@ const { useState, useEffect, useRef, useMemo } = React;
                     if (!supabaseClient) return;
                     const { data: evData } = await supabaseClient.from('global_events').select('*').eq('id', 1).maybeSingle();
                     if (evData) setGlobalEvents(evData);
-                    notify(evData?.maintenance_active ? '🛠️ Mentenanța este încă activă.' : '✅ Serverul este online!');
+                    notify(evData?.maintenance_active ? '🛠️ Maintenance is still active.' : '✅ Server is back online!');
                   }}
                   className="flex-1 py-2 rounded-xl bg-cyan-950 border border-cyan-400 text-xs font-black text-cyan-200 active:scale-95"
                 >
-                  ↻ Verifică Acum
+                  ↻ Check Now
                 </button>
                 <button
                   type="button"
                   onClick={handleCloudLogout}
                   className="py-2 px-3 rounded-xl bg-slate-900 border border-slate-600 text-xs font-bold text-slate-300"
                 >
-                  Ieșire
+                  Sign Out
                 </button>
               </div>
             </div>
@@ -13954,7 +13961,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                           : 'bg-slate-950/85 border-slate-800'
                       }`}>
                         <div className="flex items-center justify-between gap-1.5">
-                          <span className="text-[9px] font-black text-rose-300 uppercase">🛠️ Mod Mentenanță Server</span>
+                          <span className="text-[9px] font-black text-rose-300 uppercase">🛠️ Server Maintenance Mode</span>
                           <button
                             type="button"
                             onClick={async () => {
@@ -13964,18 +13971,18 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 .from('global_events')
                                 .update({
                                   maintenance_active: nextMaint,
-                                  maintenance_message: adminMaintMsgInput.trim() || 'Serverul este în mentenanță pentru un nou update. Revenim în curând!',
+                                  maintenance_message: adminMaintMsgInput.trim() || 'Server is currently under maintenance for a new update. We will be back online shortly!',
                                   updated_at: new Date().toISOString()
                                 })
                                 .eq('id', 1)
                                 .select()
                                 .single();
                               if (error) {
-                                notify('⚠️ Rulează mai întâi SQL-ul pentru maintenance_active în Supabase!');
+                                notify('⚠️ Run the maintenance_active SQL migration in Supabase first!');
                                 return;
                               }
                               if (data) setGlobalEvents(data);
-                              notify(nextMaint ? '🛠️ MENTENANȚĂ ACTIVATĂ! Doar Adminii pot intra în joc.' : '✅ Mentenanță oprită! Serverul este deschis tuturor.');
+                              notify(nextMaint ? '🛠️ MAINTENANCE ON! Only Admins can access the game.' : '✅ Maintenance OFF! Server is open to all pilots.');
                             }}
                             className={`px-2.5 py-1 rounded border text-[9px] font-black active:scale-95 ${
                               globalEvents.maintenance_active
@@ -13983,14 +13990,14 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 : 'bg-slate-900 border-rose-500/60 text-rose-200'
                             }`}
                           >
-                            {globalEvents.maintenance_active ? '🛠️ MENTENANȚĂ: ON' : '🛠️ MENTENANȚĂ: OFF'}
+                            {globalEvents.maintenance_active ? '🛠️ MAINTENANCE: ON' : '🛠️ MAINTENANCE: OFF'}
                           </button>
                         </div>
                         <div className="flex gap-1">
                           <input
                             value={adminMaintMsgInput}
                             onChange={e => setAdminMaintMsgInput(e.target.value)}
-                            placeholder="Mesaj afișat jucătorilor în timpul mentenanței..."
+                            placeholder="Message displayed to players during maintenance..."
                             className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[9px] text-white outline-none"
                           />
                           <button
@@ -14000,7 +14007,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                               const { data, error } = await supabaseClient
                                 .from('global_events')
                                 .update({
-                                  maintenance_message: adminMaintMsgInput.trim() || 'Serverul este în mentenanță pentru un nou update. Revenim în curând!',
+                                  maintenance_message: adminMaintMsgInput.trim() || 'Server is currently under maintenance for a new update. We will be back online shortly!',
                                   updated_at: new Date().toISOString()
                                 })
                                 .eq('id', 1)
@@ -14008,12 +14015,12 @@ const { useState, useEffect, useRef, useMemo } = React;
                                 .single();
                               if (!error && data) {
                                 setGlobalEvents(data);
-                                notify('💾 Mesaj mentenanță salvat!');
+                                notify('💾 Maintenance message saved!');
                               }
                             }}
                             className="px-2 py-1 rounded bg-slate-800 border border-slate-600 text-[8.5px] font-black text-slate-200"
                           >
-                            Salvează
+                            Save
                           </button>
                         </div>
                       </div>
@@ -15646,7 +15653,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="flex items-center justify-between border-b border-cyan-800 pb-2">
                     <div>
                       <div className="text-sm font-black text-cyan-300 uppercase">Setări Joc</div>
-                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.37.1 (Drone Evolution & Maintenance Mode)</div>
+                      <div className="text-[11px] text-amber-300 font-bold">SilvPas Idle Games • Version 1.38 (Server Maintenance & Drone Evolution)</div>
                     </div>
                     <button onClick={() => setShowSettingsModal(false)} className="text-slate-300 hover:text-white text-base font-bold px-2">✕</button>
                   </div>
@@ -15999,7 +16006,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                   <div className="space-y-1.5">
                     {globalEvents?.maintenance_active && (
                       <div className="rounded-xl bg-rose-950/90 border border-rose-400/80 px-2.5 py-1 flex items-center justify-between gap-2">
-                        <span className="text-[9.5px] font-black text-rose-200">🛠️ MOD MENTENANȚĂ ACTIV (Doar Adminii au acces)</span>
+                        <span className="text-[9.5px] font-black text-rose-200">🛠️ MAINTENANCE MODE ACTIVE (Admin Access Only)</span>
                         <button
                           type="button"
                           onClick={() => setShowAdminModal(true)}
