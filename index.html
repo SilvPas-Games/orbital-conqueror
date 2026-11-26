@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Orbital Conqueror — SilvPas Idle Games v1.44 (Online Clans, Full PvP Combat & Live Admin Gifts)</title>
+  <title>Orbital Conqueror — SilvPas Idle Games v1.45 (Immersive Live Multiplayer Encounters & Squads)</title>
   <script>
     (function() {
       if (typeof Node === 'function' && Node.prototype && !window.__ocDomPatchApplied) {
@@ -60,7 +60,7 @@ const { useState, useEffect, useRef, useMemo } = React;
 
 
     // ============================================================================
-    // CATALOG DATA (SilvPas Idle Games • Version 1.44 — Orbital Conqueror)
+    // CATALOG DATA (SilvPas Idle Games • Version 1.45 — Orbital Conqueror)
     // ============================================================================
 
     const SHIP_SPRITES_3D = {
@@ -1921,7 +1921,7 @@ const { useState, useEffect, useRef, useMemo } = React;
     });
 
     const DEFAULT_STATE = {
-      version: '1.44',
+      version: '1.45',
       playerName: 'SilvPas',
       petName: 'A.I.D.',
       credits: 35000,
@@ -2071,7 +2071,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       return {
         ...DEFAULT_STATE,
         ...parsed,
-        version: '1.44',
+        version: '1.45',
         playerName: (typeof parsed.playerName === 'string' && parsed.playerName.trim().length >= 2) ? parsed.playerName.trim().slice(0, 18) : 'SilvPas',
         droneFormation: FORMATIONS.some(f => f.id === parsed.droneFormation) ? parsed.droneFormation : 'standard',
         unlockedFormations: Array.from(new Set(['standard', ...(Array.isArray(parsed.unlockedFormations) ? parsed.unlockedFormations.filter(id => FORMATIONS.some(f => f.id === id)) : [])])),
@@ -3451,6 +3451,15 @@ const { useState, useEffect, useRef, useMemo } = React;
 
     const ORIGINAL_CHANGELOG_SECTIONS = [
       {
+        title: 'v1.45 • Immersive Live Player Encounters, Squads & Real-Time Combat Visuals',
+        items: [
+          'Added interactive Player Encounter Cards when tapping any pilot in Space or in the new Sector Pilots radar list — inspect warship stats, send direct @mentions, invite allies to a Live Squad (up to 4 pilots), invite to Clan, or lock PvP target.',
+          'Rendered real-time visual effects on other players in Space: live laser beams when firing, orbiting A.I.D. companions, Instant Shield spheres, Titan Fortify rings, and Vanguard Repair/Shield pulses.',
+          'Made Vanguard Healing Pods and Titan Protection shields affect nearby allied players in real time via Supabase Realtime broadcasts.',
+          'Added Quick Tactical Signals & Emotes (Salut!, Ajutor!, Atac!, Regrupare) that project visible holographic flares above your ship in Space.'
+        ]
+      },
+      {
         title: 'v1.44 • Online Supabase Clans, Full PvP Arsenal & Live Admin Gift Sync',
         items: [
           'Connected the Clan System directly to Supabase (`public.clans`) so players can create, search, join, leave, and donate Credits/Astralite to shared server clans in real time.',
@@ -3811,7 +3820,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'CHANGELOG_v1.44.md';
+      a.download = 'CHANGELOG_v1.45.md';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3942,6 +3951,10 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [spaceChatInput, setSpaceChatInput] = useState('');
       const [spaceChatOpen, setSpaceChatOpen] = useState(false);
       const [pvpTargetUid, setPvpTargetUid] = useState(null);
+      const [selectedPilotModal, setSelectedPilotModal] = useState(null);
+      const [sectorPilotsDrawerOpen, setSectorPilotsDrawerOpen] = useState(false);
+      const [liveSquad, setLiveSquad] = useState(null);
+      const [incomingSquadInvite, setIncomingSquadInvite] = useState(null);
       const remotePlayersRef = useRef({});
       const cloudReadyToSaveRef = useRef(false);
       const [toast, setToast] = useState(null);
@@ -5182,6 +5195,24 @@ const { useState, useEffect, useRef, useMemo } = React;
             maxShield: Math.max(0, Math.round(curSt?.maxShield || 1800)),
             droneCount: (stNow.droneSlots || []).filter(d => d && d.type !== null).length,
             formationId: stNow.droneFormation || 'standard',
+            petOwned: Boolean(curSt?.petStats?.active),
+            petLvl: curSt?.petStats?.lvl || 1,
+            rankName: rInf?.current?.name || 'Basic Space Pilot',
+            xp: Math.floor(stNow.xp || 0),
+            honor: Math.floor(stNow.honor || 0),
+            canInspect: stNow.profileVisibleOnInspect !== false,
+            isFiring: Boolean((manualEngageRef.current || finishingRef.current) && !cNow.inSafeZone && (cNow.enemy || cNow.targetPvpUid) && (performance.now() - Math.max(cNow.lastShot || 0, cNow.lastPvpShot || 0) < 1100)),
+            fireTargetX: cNow.targetPvpUid
+              ? Math.round(remotePlayersRef.current[cNow.targetPvpUid]?.renderX ?? remotePlayersRef.current[cNow.targetPvpUid]?.targetX ?? 0)
+              : (cNow.enemy ? Math.round(cNow.enemy.x) : null),
+            fireTargetY: cNow.targetPvpUid
+              ? Math.round(remotePlayersRef.current[cNow.targetPvpUid]?.renderY ?? remotePlayersRef.current[cNow.targetPvpUid]?.targetY ?? 0)
+              : (cNow.enemy ? Math.round(cNow.enemy.y) : null),
+            ammoColor: (AMMO_TYPES.find(a => a.id === (stNow.selectedAmmo || 'x1')) || AMMO_TYPES[0]).color,
+            isIshActive: Boolean(performance.now() < (cNow.ishActiveUntil || 0)),
+            isFortified: Boolean(curSt?.ship?.id === 'titan' && performance.now() < (cNow.shipSkillActiveUntil?.tt_fortify || 0)),
+            isRepairBeam: Boolean(curSt?.ship?.id === 'vanguard' && performance.now() < (cNow.shipSkillActiveUntil?.vg_repair_hp || 0)),
+            isShieldBoost: Boolean(curSt?.ship?.id === 'vanguard' && performance.now() < (cNow.shipSkillActiveUntil?.vg_shield_boost || 0)),
             ts: Date.now(),
           };
         };
@@ -5373,6 +5404,82 @@ const { useState, useEffect, useRef, useMemo } = React;
             });
             notify(`🎁 Cadou de la Administrator: +${fmt(gCr)} CR & +${fmt(gAst)} AST!`);
           })
+          .on('broadcast', { event: 'squad_event' }, ({ payload }) => {
+            if (!payload) return;
+            if (payload.type === 'invite' && payload.targetUid === myUid) {
+              setIncomingSquadInvite(payload);
+              playMicroSfx('supply', stateRef.current?.soundEffects !== false);
+              notify(`🛸 Invitație în Escadrilă de la ${payload.fromName} (${payload.fromCompanyTag || 'Pilot'})!`);
+            } else if (payload.type === 'sync_squad' && Array.isArray(payload.members)) {
+              const amIn = payload.members.some(m => m.uid === myUid);
+              if (amIn) {
+                setLiveSquad({ id: payload.squadId, leaderUid: payload.leaderUid, members: payload.members });
+              } else {
+                setLiveSquad(prev => (prev && prev.id === payload.squadId ? null : prev));
+              }
+            } else if (payload.type === 'accept' && payload.leaderUid === myUid) {
+              setLiveSquad(prev => {
+                const baseMembers = prev?.members || [{
+                  uid: myUid,
+                  pilotId: stateRef.current.pilotId,
+                  name: stateRef.current.playerName || 'Pilot',
+                  companyId: stateRef.current.companyId || null,
+                  clanTag: stateRef.current.clan?.tag || null,
+                }];
+                if (baseMembers.some(m => m.uid === payload.member.uid)) return prev;
+                const nextMembers = [...baseMembers, payload.member].slice(0, 4);
+                const nextSq = { id: prev?.id || `SQ-${myUid.slice(0, 6)}`, leaderUid: myUid, members: nextMembers };
+                channel.send({
+                  type: 'broadcast',
+                  event: 'squad_event',
+                  payload: { type: 'sync_squad', squadId: nextSq.id, leaderUid: myUid, members: nextMembers }
+                });
+                notify(`✅ ${payload.member.name} s-a alăturat Escadrilei!`);
+                return nextSq;
+              });
+            } else if (payload.type === 'leave' && payload.squadId) {
+              setLiveSquad(prev => {
+                if (!prev || prev.id !== payload.squadId) return prev;
+                const rem = (prev.members || []).filter(m => m.uid !== payload.uid);
+                if (rem.length <= 1) return null;
+                return { ...prev, leaderUid: rem[0].uid, members: rem };
+              });
+            }
+          })
+          .on('broadcast', { event: 'support_pulse' }, ({ payload }) => {
+            if (!payload || payload.fromUid === myUid) return;
+            const c = combatRef.current;
+            const curSt = statsRef.current;
+            const stNow = stateRef.current;
+            const mySec = resolvePortalTargetId(stNow.sectorId || 'main', stNow.companyId);
+            if (payload.sectorId !== mySec) return;
+            if (payload.kind === 'healing_pod') {
+              if (!Array.isArray(c.healingPods)) c.healingPods = [];
+              c.healingPods.push({
+                id: `remote-pod-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+                x: Number(payload.x || 310),
+                y: Number(payload.y || 295),
+                radius: Number(payload.radius || 220),
+                expiresAt: performance.now() + Number(payload.durSec || 12) * 1000,
+                ownerName: payload.fromName || 'Ally'
+              });
+              c.shockwaves.push({ x: Number(payload.x || 310), y: Number(payload.y || 295), r: 16, maxR: 220, color: '#14b8a6', alpha: 0.85 });
+              notify(`📡 ${payload.fromName || 'Un aliat'} a plasat un Orbital Healing Pod în sector!`);
+            } else if (payload.kind === 'titan_protect') {
+              const distToTitan = Math.hypot((c.liveShipX || 310) - Number(payload.x || 0), (c.liveShipY || 295) - Number(payload.y || 0));
+              if (distToTitan <= 260 && curSt) {
+                const bonusShd = Math.floor(curSt.maxShield * 0.25);
+                c.playerShield = Math.min(curSt.maxShield, (c.playerShield || 0) + bonusShd);
+                c.floaters.push({ x: c.liveShipX || 310, y: (c.liveShipY || 295) - 24, text: `🔗 +${fmt(bonusShd)} SHD (${payload.fromName})`, color: '#38bdf8', life: 1.0 });
+                notify(`🔗 Titan ${payload.fromName} ți-a întărit scutul (+${fmt(bonusShd)} SHD)!`);
+              }
+            } else if (payload.kind === 'ping_flare') {
+              const rxF = Number(payload.x || 310);
+              const ryF = Number(payload.y || 295);
+              c.shockwaves.push({ x: rxF, y: ryF, r: 10, maxR: 95, color: payload.color || '#38bdf8', alpha: 0.9 });
+              c.floaters.push({ x: rxF, y: ryF - 38, text: `${payload.icon || '👋'} ${payload.label || 'Salut!'}`, color: payload.color || '#7dd3fc', life: 1.5 });
+            }
+          })
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
               const initPkt = buildMyPacket();
@@ -5441,6 +5548,23 @@ const { useState, useEffect, useRef, useMemo } = React;
             type: 'broadcast',
             event: 'admin_gift',
             payload: { targetUid, credits: addCr, uridium: addAst }
+          });
+        };
+        combatRef.current.sendSquadEvent = (payloadObj) => {
+          channel.send({ type: 'broadcast', event: 'squad_event', payload: payloadObj });
+        };
+        combatRef.current.sendSupportPulse = (payloadObj) => {
+          const stNow = stateRef.current;
+          const mySec = resolvePortalTargetId(stNow.sectorId || 'main', stNow.companyId);
+          channel.send({
+            type: 'broadcast',
+            event: 'support_pulse',
+            payload: {
+              fromUid: myUid,
+              fromName: stNow.playerName || 'Pilot',
+              sectorId: mySec,
+              ...payloadObj,
+            }
           });
         };
 
@@ -9799,6 +9923,76 @@ const { useState, useEffect, useRef, useMemo } = React;
                 }
                 ctx.restore();
 
+                // Remote A.I.D. Companion (if active)
+                if (rp.petOwned) {
+                  const rPetStage = getPetStageKey(rp.petLvl || 1);
+                  const rPetImg = PET_IMAGE_CACHE[rPetStage] || PET_IMAGE_CACHE.lvl1;
+                  const rPetX = rx - Math.cos(rp.renderHeading) * 28 - Math.sin(rp.renderHeading) * 18;
+                  const rPetY = ry - Math.sin(rp.renderHeading) * 28 + Math.cos(rp.renderHeading) * 18;
+                  ctx.save();
+                  ctx.translate(rPetX, rPetY);
+                  ctx.rotate(rp.renderHeading);
+                  if (rPetImg && rPetImg.complete && rPetImg.naturalWidth > 0) {
+                    ctx.drawImage(rPetImg, -9, -9, 18, 18);
+                  } else {
+                    ctx.fillStyle = '#fb923c';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+                    ctx.fill();
+                  }
+                  ctx.restore();
+                }
+
+                // Remote Active Ability Visuals (Instant Shield, Fortify, Repair Beam, Shield Boost)
+                if (rp.isIshActive) {
+                  ctx.save();
+                  ctx.strokeStyle = 'rgba(250, 204, 21, 0.85)';
+                  ctx.fillStyle = 'rgba(250, 204, 21, 0.14)';
+                  ctx.lineWidth = 2.2;
+                  ctx.beginPath();
+                  ctx.arc(rx, ry, 28 + Math.sin(now * 0.015) * 2, 0, Math.PI * 2);
+                  ctx.fill();
+                  ctx.stroke();
+                  ctx.restore();
+                }
+                if (rp.isFortified) {
+                  ctx.save();
+                  ctx.strokeStyle = 'rgba(245, 158, 11, 0.85)';
+                  ctx.lineWidth = 2.5;
+                  ctx.setLineDash([6, 4]);
+                  ctx.beginPath();
+                  ctx.arc(rx, ry, 30, 0, Math.PI * 2);
+                  ctx.stroke();
+                  ctx.restore();
+                }
+                if (rp.isRepairBeam || rp.isShieldBoost) {
+                  ctx.save();
+                  ctx.strokeStyle = rp.isRepairBeam ? 'rgba(52, 211, 153, 0.8)' : 'rgba(56, 189, 248, 0.8)';
+                  ctx.lineWidth = 2;
+                  ctx.beginPath();
+                  ctx.arc(rx, ry, 25 + ((now * 0.03) % 10), 0, Math.PI * 2);
+                  ctx.stroke();
+                  ctx.restore();
+                }
+
+                // Remote Live Laser Beams when remote pilot is firing
+                if (rp.isFiring && Number.isFinite(rp.fireTargetX) && Number.isFinite(rp.fireTargetY)) {
+                  const beamPulse = Math.sin(now * 0.025);
+                  if (beamPulse > -0.25) {
+                    ctx.save();
+                    ctx.strokeStyle = rp.ammoColor || '#38bdf8';
+                    ctx.lineWidth = 2.1;
+                    ctx.globalAlpha = 0.78;
+                    ctx.beginPath();
+                    ctx.moveTo(rx - 6, ry - 4);
+                    ctx.lineTo(rp.fireTargetX, rp.fireTargetY);
+                    ctx.moveTo(rx + 6, ry - 4);
+                    ctx.lineTo(rp.fireTargetX, rp.fireTargetY);
+                    ctx.stroke();
+                    ctx.restore();
+                  }
+                }
+
                 // Remote HP & Shield Bars
                 drawUnitBarsOnly(
                   rx,
@@ -11388,7 +11582,10 @@ const { useState, useEffect, useRef, useMemo } = React;
           c.healingPods.push({ id: `pod-${nowPerf}`, x: pX, y: pY, radius: sk.radius || 220, expiresAt: nowPerf + sk.durSec * 1000 });
           c.shockwaves.push({ x: pX, y: pY, r: 16, maxR: sk.radius || 220, color: '#14b8a6', alpha: 0.85 });
           c.floaters.push({ x: pX, y: pY - 28, text: '📡 HEALING POD DEPLOYED', color: '#2dd4bf', life: 0.95 });
-          notify('📡 Orbital Healing Pod plasat pe hartă (220px, 12s)!');
+          if (c.sendSupportPulse) {
+            c.sendSupportPulse({ kind: 'healing_pod', x: Math.round(pX), y: Math.round(pY), radius: sk.radius || 220, durSec: sk.durSec || 12 });
+          }
+          notify('📡 Orbital Healing Pod plasat pe hartă (220px, 12s) — activ și pentru aliați!');
         } else if (sk.id === 'ft_total_cloak') {
           c.shipSkillLastUsed[sk.id] = nowPerf;
           c.shipSkillActiveUntil[sk.id] = nowPerf + sk.durSec * 1000;
@@ -11465,7 +11662,10 @@ const { useState, useEffect, useRef, useMemo } = React;
           c.shipSkillActiveUntil[sk.id] = nowPerf + sk.durSec * 1000;
           c.shockwaves.push({ x: pX, y: pY, r: 16, maxR: sk.radius || 250, color: '#38bdf8', alpha: 0.9 });
           c.floaters.push({ x: pX, y: pY - 26, text: '🔗 PROTECTION LINK (8s)', color: '#7dd3fc', life: 0.9 });
-          notify('🔗 Titan Protection ACTIV: Absoarbe 50% din daunele aliaților (8s)!');
+          if (c.sendSupportPulse) {
+            c.sendSupportPulse({ kind: 'titan_protect', x: Math.round(pX), y: Math.round(pY), radius: sk.radius || 250 });
+          }
+          notify('🔗 Titan Protection ACTIV: Scut +25% pentru aliații din raza de 250px!');
         }
         playMicroSfx('supply', state.soundEffects !== false);
       };
@@ -15777,6 +15977,186 @@ const { useState, useEffect, useRef, useMemo } = React;
               </div>
             )}
 
+                        {/* Incoming Squad Invite Popup */}
+                        {incomingSquadInvite && (
+                          <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 w-[330px] bg-slate-950/95 border border-emerald-400 rounded-2xl p-3 shadow-[0_0_28px_rgba(16,185,129,0.4)] space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black text-emerald-300 uppercase">🛸 Invitație Escadrilă</span>
+                              <button onClick={() => setIncomingSquadInvite(null)} className="text-xs text-slate-400">✕</button>
+                            </div>
+                            <div className="text-[10px] text-slate-200">
+                              Pilotul <span className="font-black text-amber-300">{incomingSquadInvite.fromName}</span> ({incomingSquadInvite.fromCompanyTag || 'Pilot'}) te invită în escadrila sa!
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (combatRef.current.sendSquadEvent && authSession?.user?.id) {
+                                    combatRef.current.sendSquadEvent({
+                                      type: 'accept',
+                                      leaderUid: incomingSquadInvite.fromUid,
+                                      member: {
+                                        uid: authSession.user.id,
+                                        pilotId: state.pilotId,
+                                        name: state.playerName || 'Pilot',
+                                        companyId: state.companyId || null,
+                                        clanTag: state.clan?.tag || null,
+                                      }
+                                    });
+                                  }
+                                  setIncomingSquadInvite(null);
+                                  notify(`✅ Ai acceptat invitația lui ${incomingSquadInvite.fromName}!`);
+                                }}
+                                className="flex-1 py-1.5 rounded-lg bg-emerald-500/25 border border-emerald-400 text-[9.5px] font-black text-emerald-200 active:scale-95"
+                              >
+                                ✓ Acceptă
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setIncomingSquadInvite(null)}
+                                className="flex-1 py-1.5 rounded-lg bg-rose-950/80 border border-rose-500/60 text-[9.5px] font-black text-rose-200 active:scale-95"
+                              >
+                                ✕ Refuză
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Interactive Remote Pilot Inspect & Social Modal */}
+                        {selectedPilotModal && (() => {
+                          const sp = selectedPilotModal;
+                          const spComp = getCompanyById(sp.companyId);
+                          const spShip = SHIPS.find(s => s.id === sp.shipId) || SHIPS[0];
+                          const alreadyInSquad = Boolean(liveSquad?.members?.some(m => m.uid === sp.uid));
+                          const canInviteClan = Boolean(
+                            state.clan &&
+                            !sp.clanTag &&
+                            ['leader', 'officer'].includes((state.clan.members || []).find(m => m.pilotId === state.pilotId)?.role)
+                          );
+                          return (
+                            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3">
+                              <div className="bg-slate-950/95 border border-cyan-400/60 rounded-2xl p-3.5 w-full max-w-[350px] space-y-2.5 shadow-[0_0_32px_rgba(56,189,248,0.28)]">
+                                <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <RankBadgeSVG rankId={sp.rankId || 1} size={28} />
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-black text-white truncate flex items-center gap-1">
+                                        {sp.clanTag && <span className="text-amber-300">[{sp.clanTag}]</span>}
+                                        <span>{sp.name}</span>
+                                        {spComp && (
+                                          <span className="text-[8px] px-1.5 py-0.5 rounded font-black" style={{ backgroundColor: `${spComp.color}25`, color: spComp.color }}>
+                                            {spComp.tag}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-[8.5px] font-mono text-slate-400">
+                                        {sp.pilotId || 'OC-PILOT'} • {sp.rankName || 'Space Pilot'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <button onClick={() => setSelectedPilotModal(null)} className="text-slate-300 hover:text-white text-sm font-bold px-2">✕</button>
+                                </div>
+
+                                {sp.canInspect === false ? (
+                                  <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 text-[9.5px] text-slate-400 text-center">
+                                    🔒 Acest pilot și-a setat profilul pe Privat.
+                                  </div>
+                                ) : (
+                                  <div className="bg-slate-900/85 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-[9.5px]">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-slate-400">Navă Activă:</span>
+                                      <span className="font-black text-cyan-300">{spShip.name}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-slate-400">Hull HP / Shield:</span>
+                                      <span className="font-mono text-emerald-300">{fmt(sp.hp)}/{fmt(sp.maxHp)} • {fmt(sp.shield)}/{fmt(sp.maxShield)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-slate-400">Drone & Formație:</span>
+                                      <span className="font-mono text-amber-200">{sp.droneCount || 0}/10 • {(sp.formationId || 'standard').toUpperCase()}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-slate-400">XP / Onoare:</span>
+                                      <span className="font-mono text-purple-200">{fmt(sp.xp || 0)} XP • {fmt(sp.honor || 0)} ONO</span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-1.5 text-[9.5px] font-black">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSpaceChatOpen(true);
+                                      setSpaceChatInput(`@${sp.name} `);
+                                      setSelectedPilotModal(null);
+                                    }}
+                                    className="py-1.5 px-2 rounded-xl bg-cyan-950/90 border border-cyan-400/60 text-cyan-200 active:scale-95"
+                                  >
+                                    💬 Mesaj în Chat
+                                  </button>
+
+                                  {!sp.isHostile && !alreadyInSquad && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (combatRef.current.sendSquadEvent && authSession?.user?.id) {
+                                          combatRef.current.sendSquadEvent({
+                                            type: 'invite',
+                                            targetUid: sp.uid,
+                                            fromUid: authSession.user.id,
+                                            fromName: state.playerName || 'Pilot',
+                                            fromCompanyTag: activeCompany?.tag || null,
+                                          });
+                                          notify(`🛸 Invitație în escadrilă trimisă către ${sp.name}!`);
+                                        }
+                                        setSelectedPilotModal(null);
+                                      }}
+                                      className="py-1.5 px-2 rounded-xl bg-emerald-950/90 border border-emerald-400/60 text-emerald-200 active:scale-95"
+                                    >
+                                      🛡️ Invită Escadrilă
+                                    </button>
+                                  )}
+
+                                  {sp.canPvpHere && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        combatRef.current.targetEnemyId = null;
+                                        combatRef.current.enemy = null;
+                                        combatRef.current.targetPvpUid = sp.uid;
+                                        setPvpTargetUid(sp.uid);
+                                        manualEngageRef.current = true;
+                                        setManualEngage(true);
+                                        setSelectedPilotModal(null);
+                                        notify(`⚔️ Atac PvP pornit asupra ${sp.name}!`);
+                                      }}
+                                      className="py-1.5 px-2 rounded-xl bg-rose-950/90 border border-rose-400 text-rose-200 active:scale-95"
+                                    >
+                                      ⚔️ Atacă (PvP)
+                                    </button>
+                                  )}
+
+                                  {canInviteClan && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (combatRef.current.sendSectorChat) {
+                                          combatRef.current.sendSectorChat(`@${sp.name} Te invităm în clanul [${state.clan.tag}] ${state.clan.name}! Caută [${state.clan.tag}] în meniul Clan.`);
+                                        }
+                                        setSelectedPilotModal(null);
+                                        notify(`🛡️ Invitație clan trimisă în chat către ${sp.name}!`);
+                                      }}
+                                      className="py-1.5 px-2 rounded-xl bg-amber-950/90 border border-amber-400/60 text-amber-200 active:scale-95"
+                                    >
+                                      👑 Invită în Clan
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         {showClanModal && (() => {
               const myClan = state.clan;
               const myMember = myClan ? (myClan.members || []).find(m => m.pilotId === state.pilotId) : null;
@@ -17789,7 +18169,37 @@ const { useState, useEffect, useRef, useMemo } = React;
                               })
                             )}
                           </div>
-                          <form
+                          {/* Quick Tactical Signals & Emotes visible above ship in Space */}
+                            <div className="grid grid-cols-4 gap-1">
+                              {[
+                                { icon: '👋', label: 'Salut!', color: '#38bdf8' },
+                                { icon: '🆘', label: 'Ajutor!', color: '#f43f5e' },
+                                { icon: '⚔️', label: 'Atac!', color: '#f59e0b' },
+                                { icon: '🛡️', label: 'Regrupare', color: '#10b981' },
+                              ].map(sig => (
+                                <button
+                                  key={sig.label}
+                                  type="button"
+                                  onClick={() => {
+                                    const c = combatRef.current;
+                                    const sx = Math.round(c.liveShipX || 310);
+                                    const sy = Math.round(c.liveShipY || 295);
+                                    c.shockwaves.push({ x: sx, y: sy, r: 10, maxR: 85, color: sig.color, alpha: 0.85 });
+                                    c.floaters.push({ x: sx, y: sy - 38, text: `${sig.icon} ${sig.label}`, color: sig.color, life: 1.4 });
+                                    if (c.sendSupportPulse) {
+                                      c.sendSupportPulse({ kind: 'ping_flare', x: sx, y: sy, icon: sig.icon, label: sig.label, color: sig.color });
+                                    }
+                                    if (c.sendSectorChat) {
+                                      c.sendSectorChat(`${sig.icon} ${sig.label}`);
+                                    }
+                                  }}
+                                  className="py-0.5 px-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-white/10 text-[7px] font-black text-slate-200 truncate active:scale-95"
+                                >
+                                  {sig.icon} {sig.label}
+                                </button>
+                              ))}
+                            </div>
+                            <form
                             onSubmit={(e) => {
                               e.preventDefault();
                               if (!spaceChatInput.trim()) return;
@@ -17939,7 +18349,13 @@ const { useState, useEffect, useRef, useMemo } = React;
                           >
                             <div className="flex items-center justify-between px-0.5 pb-0.5 text-[7.5px] font-mono font-black drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
                               <span className="text-cyan-300">[{secCode}]</span>
-                              <span className="text-emerald-300" title="Piloți în acest sector / Total online">● {onlineSectorPilots.length + 1}/{onlineGlobalCount}</span>
+                              <span
+                                onClick={(e) => { e.stopPropagation(); setSectorPilotsDrawerOpen(v => !v); }}
+                                className="text-emerald-300 underline decoration-emerald-400/60 px-1 rounded hover:bg-emerald-500/20"
+                                title="Apasă pentru lista piloților din sector"
+                              >
+                                ● {onlineSectorPilots.length + 1}/{onlineGlobalCount} ▾
+                              </span>
                               <span className="text-slate-300 group-hover:text-cyan-200">🗺️</span>
                             </div>
                             <svg width="115" height="76" viewBox={`0 0 ${mapW} ${mapH}`} preserveAspectRatio="none" className="rounded-md bg-[#030b1a]/45 overflow-hidden block">
@@ -18075,6 +18491,101 @@ const { useState, useEffect, useRef, useMemo } = React;
                           </button>
                         );
                       })()}
+
+                      {/* Live Sector Pilots List Drawer */}
+                      {sectorPilotsDrawerOpen && !state.activeGate && (
+                        <div className="pointer-events-auto w-48 bg-slate-950/92 backdrop-blur-md border border-cyan-400/50 rounded-xl p-2 space-y-1.5 shadow-2xl">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-1">
+                            <span className="text-[8.5px] font-black text-cyan-300 uppercase">
+                              🛰️ Piloți în Sector ({onlineSectorPilots.length + 1})
+                            </span>
+                            <button onClick={() => setSectorPilotsDrawerOpen(false)} className="text-[9px] text-slate-400 px-1">✕</button>
+                          </div>
+                          <div className="max-h-36 overflow-y-auto space-y-1">
+                            <div className="flex items-center justify-between bg-cyan-950/40 border border-cyan-500/25 rounded px-1.5 py-1 text-[8px]">
+                              <span className="font-black text-cyan-200 truncate">
+                                {state.clan?.tag ? `[${state.clan.tag}] ` : ''}{state.playerName} (Tu)
+                              </span>
+                              <span className="text-[7px] font-mono text-emerald-300">{activeCompany?.tag || '—'}</span>
+                            </div>
+                            {onlineSectorPilots.length === 0 ? (
+                              <div className="text-[8px] text-slate-400 text-center py-1.5">
+                                Niciun alt pilot în acest sector momentan.
+                              </div>
+                            ) : (
+                              onlineSectorPilots.map(rp => {
+                                const rC = getCompanyById(rp.companyId);
+                                const isHost = Boolean(rC && activeCompany && rC.id !== activeCompany.id);
+                                const mySecNow = resolvePortalTargetId(state.sectorId || 'main', state.companyId);
+                                const canPvpNow = (String(mySecNow).startsWith('4-') || isEnemyUpperMap(mySecNow, state.companyId)) && isHost && !combatRef.current.inSafeZone;
+                                return (
+                                  <button
+                                    key={rp.uid}
+                                    type="button"
+                                    onClick={() => {
+                                      setSectorPilotsDrawerOpen(false);
+                                      setSelectedPilotModal({ ...rp, isHostile: isHost, canPvpHere: canPvpNow });
+                                    }}
+                                    className="w-full flex items-center justify-between bg-slate-900/90 hover:bg-slate-800 border border-white/10 rounded px-1.5 py-1 text-[8px] text-left"
+                                  >
+                                    <span className={`font-bold truncate ${isHost ? 'text-rose-300' : 'text-sky-200'}`}>
+                                      {rp.clanTag ? `[${rp.clanTag}] ` : ''}{rp.name}
+                                    </span>
+                                    <span className="text-[7px] font-mono text-slate-400 shrink-0 ml-1">
+                                      {rC?.tag || '—'} • {Math.round(Math.hypot((rp.renderX ?? rp.targetX ?? 0) - (hudSnapshot.shipPos?.x || 0), (rp.renderY ?? rp.targetY ?? 0) - (hudSnapshot.shipPos?.y || 0)))}px
+                                    </span>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Live Squad (Escadrila) Compact HUD */}
+                      {liveSquad && Array.isArray(liveSquad.members) && liveSquad.members.length > 1 && (
+                        <div className="pointer-events-auto w-44 bg-slate-950/85 backdrop-blur-md border border-emerald-400/45 rounded-xl p-1.5 space-y-1 shadow-xl">
+                          <div className="flex items-center justify-between border-b border-emerald-500/20 pb-0.5">
+                            <span className="text-[8px] font-black text-emerald-300 uppercase">🛡️ Escadrilă ({liveSquad.members.length}/4)</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (combatRef.current.sendSquadEvent && authSession?.user?.id) {
+                                  combatRef.current.sendSquadEvent({ type: 'leave', squadId: liveSquad.id, uid: authSession.user.id });
+                                }
+                                setLiveSquad(null);
+                                notify('🚪 Ai părăsit escadrila.');
+                              }}
+                              className="text-[7px] px-1 rounded bg-rose-950 text-rose-300 font-black"
+                            >
+                              Ieși
+                            </button>
+                          </div>
+                          {liveSquad.members.map(mem => {
+                            const isMe = mem.uid === authSession?.user?.id;
+                            const liveData = isMe ? null : remotePlayersRef.current[mem.uid];
+                            const hpPct = isMe
+                              ? Math.round((hudSnapshot.playerHp / Math.max(1, stats.maxHp)) * 100)
+                              : liveData ? Math.round(((liveData.hp || 0) / Math.max(1, liveData.maxHp || 1)) * 100) : 0;
+                            const secTag = isMe
+                              ? formatSectorShortCode(state.sectorId || 'main', state.companyId)
+                              : liveData?.sectorId ? formatSectorShortCode(liveData.sectorId, liveData.companyId) : 'OFF';
+                            return (
+                              <div key={mem.uid} className="text-[7.5px] bg-slate-900/80 rounded px-1.5 py-0.5 space-y-0.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-slate-100 truncate max-w-[92px]">
+                                    {mem.uid === liveSquad.leaderUid ? '👑 ' : ''}{mem.name}
+                                  </span>
+                                  <span className="font-mono text-[6.5px] text-cyan-300">[{secTag}]</span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-950 rounded-full overflow-hidden">
+                                  <div style={{ width: `${Math.max(0, Math.min(100, hpPct))}%` }} className="h-full bg-emerald-400" />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {minimapOpen && (() => {
                         const activeSecCode = state.activeGate
@@ -19200,29 +19711,18 @@ const { useState, useEffect, useRef, useMemo } = React;
                           if (tappedPilot) {
                             const rCompTap = getCompanyById(tappedPilot.companyId);
                             const isHostileTap = Boolean(rCompTap && activeCompany && rCompTap.id !== activeCompany.id);
-                            if (!isPvpZoneTap) {
-                              return notify(`🛡️ Sector protejat! Mergi în sectoarele PvP (4-1 – 4-4) pentru duel cu ${tappedPilot.name}.`);
-                            }
-                            if (!isHostileTap) {
-                              return notify(`🤝 ${tappedPilot.name} face parte din aceeași companie (${rCompTap?.tag || 'Ally'}).`);
-                            }
-                            if (combatRef.current.inSafeZone) {
-                              return notify('🛡️ Ieși din Zona de Siguranță pentru PvP!');
-                            }
                             const alreadyArmedPvp = combatRef.current.targetPvpUid === tappedPilot.uid;
-                            combatRef.current.targetEnemyId = null;
-                            combatRef.current.enemy = null;
-                            if (!alreadyArmedPvp) {
-                              combatRef.current.targetPvpUid = tappedPilot.uid;
-                              setPvpTargetUid(tappedPilot.uid);
-                              manualEngageRef.current = false;
-                              setManualEngage(false);
-                              notify(`🔴 Țintă PvP marcată: ${tappedPilot.name} — apasă a 2-a oară pentru atac!`);
-                            } else {
+                            if (alreadyArmedPvp && isPvpZoneTap && isHostileTap && !combatRef.current.inSafeZone) {
                               manualEngageRef.current = !manualEngageRef.current;
                               setManualEngage(manualEngageRef.current);
                               notify(manualEngageRef.current ? `⚔️ Atac PvP pornit asupra ${tappedPilot.name}!` : `⏸️ Atac PvP oprit.`);
+                              return;
                             }
+                            setSelectedPilotModal({
+                              ...tappedPilot,
+                              isHostile: isHostileTap,
+                              canPvpHere: isPvpZoneTap && isHostileTap && !combatRef.current.inSafeZone
+                            });
                             return;
                           }
                         }
