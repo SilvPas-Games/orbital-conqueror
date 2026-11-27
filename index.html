@@ -2135,7 +2135,7 @@ const { useState, useEffect, useRef, useMemo } = React;
           logs: Array.isArray(parsed.clan.logs) ? parsed.clan.logs.slice(0, 20) : [],
         } : null,
         clansDirectory: Array.isArray(parsed.clansDirectory) ? parsed.clansDirectory.filter(c => c && c.id && c.name && c.tag) : [],
-        adminUnlocked: Boolean(parsed.adminUnlocked),
+        adminUnlocked: false,
         activeShipId: safeShipId,
         unlockedShips: safeUnlocked,
         unlockedShipDesigns: Array.isArray(parsed.unlockedShipDesigns) ? parsed.unlockedShipDesigns.filter(id => SHIP_DESIGNS.some(d => d.id === id)) : [],
@@ -3932,6 +3932,7 @@ const { useState, useEffect, useRef, useMemo } = React;
       const [authErrorMsg, setAuthErrorMsg] = useState('');
       const [authSubmitting, setAuthSubmitting] = useState(false);
       const [cloudSyncStatus, setCloudSyncStatus] = useState('offline'); // 'offline' | 'syncing' | 'synced' | 'error'
+      const [localSaveError, setLocalSaveError] = useState('');
       const [globalEvents, setGlobalEvents] = useState({ gold_booty_active: false, double_xp_active: false, announcement: '', maintenance_active: false, maintenance_message: 'Server is currently under maintenance for a new update. We will be back online shortly!' });
       const [adminPlayersList, setAdminPlayersList] = useState([]);
       const [adminPlayersLoading, setAdminPlayersLoading] = useState(false);
@@ -4861,17 +4862,20 @@ const { useState, useEffect, useRef, useMemo } = React;
       useEffect(() => {
         const t = setInterval(() => {
           try {
-            const payloadStr = JSON.stringify({ ...state, lastSaved: Date.now() });
+            const payloadStr = JSON.stringify({ ...stateRef.current, lastSaved: Date.now() });
             localStorage.setItem('silvpas_orbital_conqueror_account_v1', payloadStr);
             localStorage.setItem('silvpas_orbital_conqueror_v172', payloadStr);
-          } catch (e) {}
+            setLocalSaveError('');
+          } catch (e) {
+            setLocalSaveError(e?.message || 'Nu s-a putut salva progresul local.');
+          }
         }, 4000);
         return () => clearInterval(t);
-      }, [state]);
+      }, []);
 
       const syncProfileToCloud = async (targetState, userIdOverride = null) => {
         const uid = userIdOverride || authSession?.user?.id;
-        if (!supabaseClient || !uid) return;
+        if (!supabaseClient || !uid) return false;
         try {
           setCloudSyncStatus('syncing');
           const clean = sanitizeGameState(targetState);
@@ -4889,17 +4893,22 @@ const { useState, useEffect, useRef, useMemo } = React;
             save_data: clean,
             updated_at: new Date().toISOString(),
           };
-          const { error } = await supabaseClient
+          const { data, error } = await supabaseClient
             .from('profiles')
             .update(payload)
-            .eq('id', uid);
-          if (error) {
+            .eq('id', uid)
+            .select('id')
+            .maybeSingle();
+          if (error || !data) {
             setCloudSyncStatus('error');
+            return false;
           } else {
             setCloudSyncStatus('synced');
+            return true;
           }
         } catch (err) {
           setCloudSyncStatus('error');
+          return false;
         }
       };
 
@@ -4929,7 +4938,7 @@ const { useState, useEffect, useRef, useMemo } = React;
               setAuthLoading(false);
               return;
             }
-            const isServerAdmin = String(existing.role || '').trim().toLowerCase() === 'admin' || Boolean(stateRef.current.adminUnlocked);
+            const isServerAdmin = String(existing.role || '').trim().toLowerCase() === 'admin';
             const merged = sanitizeGameState({
               ...(existing.save_data && typeof existing.save_data === 'object' ? existing.save_data : {}),
               pilotId: existing.pilot_id || stateRef.current.pilotId,
@@ -4941,8 +4950,8 @@ const { useState, useEffect, useRef, useMemo } = React;
               honor: Number(existing.honor ?? stateRef.current.honor),
               activeShipId: existing.active_ship_id || stateRef.current.activeShipId,
               companyId: existing.company_id ?? stateRef.current.companyId,
-              adminUnlocked: isServerAdmin,
             });
+            merged.adminUnlocked = isServerAdmin;
             setAuthProfile(existing);
             setState(merged);
             setNameInput(merged.playerName);
@@ -15905,7 +15914,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                           combatRef.current.projectiles = [];
                           setShipDestroyed(false);
                           setGodMode({ hp: false, shield: false, attack: false });
-                          setState(sanitizeGameState(DEFAULT_STATE));
+                          setState({ ...sanitizeGameState(DEFAULT_STATE), adminUnlocked: String(authProfile?.role || '').trim().toLowerCase() === 'admin' });
                           setShowAdminModal(false);
                           notify('Contul a fost resetat la 0!');
                         }}
@@ -17015,15 +17024,18 @@ const { useState, useEffect, useRef, useMemo } = React;
                           ? 'bg-amber-950/90 border-amber-400 text-amber-200'
                           : 'bg-rose-950/90 border-rose-400 text-rose-200'
                       }`}>
-                        {cloudSyncStatus === 'synced' ? '● SINCRONIZAT' : cloudSyncStatus === 'syncing' ? '↻ SE SALVEAZĂ...' : '● OFFLINE'}
+                        {cloudSyncStatus === 'synced' ? '● SINCRONIZAT' : cloudSyncStatus === 'syncing' ? '↻ SE SALVEAZĂ...' : cloudSyncStatus === 'error' ? '⚠ EROARE CLOUD' : '● OFFLINE'}
                       </span>
                     </div>
+                    {localSaveError && (
+                      <div className="text-[10px] text-rose-300">⚠️ Eroare salvare locală: {localSaveError}</div>
+                    )}
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
                         onClick={async () => {
-                          await syncProfileToCloud(state);
-                          notify('☁️ Progres salvat imediat pe server!');
+                          const saved = await syncProfileToCloud(state);
+                          notify(saved ? '☁️ Progres salvat imediat pe server!' : '⚠️ Salvarea în cloud a eșuat.');
                         }}
                         className="py-1.5 px-2.5 rounded-lg bg-cyan-950 border border-cyan-400 text-[10.5px] font-black text-cyan-200 active:scale-95"
                       >
@@ -17111,6 +17123,7 @@ const { useState, useEffect, useRef, useMemo } = React;
                         onClick={() => {
                           try {
                             const restored = decodeAccountBackupCode(accountImportInput);
+                            restored.adminUnlocked = String(authProfile?.role || '').trim().toLowerCase() === 'admin';
                             const payloadStr = JSON.stringify({ ...restored, lastSaved: Date.now() });
                             localStorage.setItem('silvpas_orbital_conqueror_account_v1', payloadStr);
                             localStorage.setItem('silvpas_orbital_conqueror_v172', payloadStr);
