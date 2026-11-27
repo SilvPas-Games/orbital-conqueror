@@ -5206,11 +5206,7 @@ const { useState, useEffect, useRef, useMemo } = React;
             });
           }
           const { data: topRows } = await supabaseClient
-            .from('profiles')
-            .select('id, pilot_id, pilot_name, xp, honor, active_ship_id, company_id, clan_tag, is_banned')
-            .eq('is_banned', false)
-            .order('xp', { ascending: false })
-            .limit(10);
+            .rpc('get_public_leaderboard', { p_limit: 10 });
           if (Array.isArray(topRows)) {
             setServerTopPlayers(topRows);
           }
@@ -5705,10 +5701,7 @@ const { useState, useEffect, useRef, useMemo } = React;
         setAdminPlayersLoading(true);
         try {
           const { data, error } = await supabaseClient
-            .from('profiles')
-            .select('id, pilot_id, pilot_name, role, is_banned, ban_reason, credits, uridium, xenomit, xp, honor, active_ship_id, company_id, clan_tag, updated_at')
-            .order('xp', { ascending: false })
-            .limit(100);
+            .rpc('get_admin_profiles');
           if (!error && Array.isArray(data)) {
             setAdminPlayersList(data);
           }
